@@ -1,202 +1,163 @@
 "use client";
 
 import { useState } from "react";
-import { WalletGate } from "@/components/WalletBar";
+import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { submitFootprint } from "@/lib/genlayer";
 import { FOOTPRINT_CONTRACT_ADDRESS } from "@/lib/constants";
 
-type EnergyData = {
-  electricity_kwh: string;
-  heating_type: string;
-  heating_kwh: string;
-};
-
-type TransportData = {
-  car_km: string;
-  car_type: string;
-  domestic_flight_km: string;
-  short_haul_flight_km: string;
-  long_haul_flight_km: string;
-  rail_km: string;
-  bus_km: string;
-};
-
-type DietData = {
-  diet_type: string;
-  beef_kg_week: string;
-  dairy_litres_week: string;
-  fish_kg_week: string;
-};
-
-type ResultState = {
-  hash: string;
-  status: "pending" | "finalized" | "failed";
-  result?: unknown;
-};
-
 const COUNTRIES = [
-  ["US", "United States"],
-  ["GB", "United Kingdom"],
-  ["DE", "Germany"],
-  ["FR", "France"],
-  ["CN", "China"],
-  ["IN", "India"],
-  ["AU", "Australia"],
-  ["CA", "Canada"],
-  ["BR", "Brazil"],
-  ["JP", "Japan"],
-  ["SE", "Sweden"],
-  ["NO", "Norway"],
-  ["ZA", "South Africa"],
-  ["NG", "Nigeria"],
-  ["KE", "Kenya"],
-  ["other", "Other country"],
+  ["US", "United States"], ["GB", "United Kingdom"], ["DE", "Germany"],
+  ["FR", "France"], ["CN", "China"], ["IN", "India"], ["AU", "Australia"],
+  ["CA", "Canada"], ["BR", "Brazil"], ["JP", "Japan"], ["SE", "Sweden"],
+  ["NO", "Norway"], ["ZA", "South Africa"], ["NG", "Nigeria"], ["KE", "Kenya"],
+  ["other", "Other"],
 ];
 
-const STEPS = ["Energy", "Transport", "Diet", "Submit"];
+const HEATING_TYPES = [
+  ["gas", "Natural gas"], ["oil", "Heating oil"], ["electric", "Electric"],
+  ["heat_pump", "Heat pump"], ["district", "District heating"], ["wood", "Wood / biomass"],
+];
+
+const CAR_TYPES = [
+  ["petrol", "Petrol"], ["diesel", "Diesel"], ["ev", "Electric"], ["average", "Unknown"],
+];
+
+const DIET_TYPES = [
+  ["vegan", "Vegan — no animal products"],
+  ["vegetarian", "Vegetarian — no meat"],
+  ["pescatarian", "Pescatarian — fish, no meat"],
+  ["low_meat", "Low meat — once or twice a week"],
+  ["medium_meat", "Medium meat — most days"],
+  ["high_meat", "High meat — most meals"],
+];
+
+type Step = "energy" | "transport" | "diet" | "review";
+const STEPS: Step[] = ["energy", "transport", "diet", "review"];
 
 export default function CalculatePage() {
   return (
     <WalletGate>
-      <CalculatorForm />
+      <Calculator />
     </WalletGate>
   );
 }
 
-function CalculatorForm() {
+function Calculator() {
   const { signer } = useWallet();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState<number>(0);
   const [country, setCountry] = useState("GB");
   const [year] = useState(new Date().getFullYear());
 
-  const [energy, setEnergy] = useState<EnergyData>({
-    electricity_kwh: "",
-    heating_type: "gas",
-    heating_kwh: "",
+  const [energy, setEnergy] = useState({
+    electricity_kwh: "", heating_type: "gas", heating_kwh: "",
   });
-
-  const [transport, setTransport] = useState<TransportData>({
-    car_km: "",
-    car_type: "average",
-    domestic_flight_km: "",
-    short_haul_flight_km: "",
-    long_haul_flight_km: "",
-    rail_km: "",
-    bus_km: "",
+  const [transport, setTransport] = useState({
+    car_km: "", car_type: "average", domestic_flight_km: "",
+    short_haul_flight_km: "", long_haul_flight_km: "", rail_km: "", bus_km: "",
   });
-
-  const [diet, setDiet] = useState<DietData>({
-    diet_type: "medium_meat",
-    beef_kg_week: "",
-    dairy_litres_week: "",
-    fish_kg_week: "",
+  const [diet, setDiet] = useState({
+    diet_type: "medium_meat", beef_kg_week: "", dairy_litres_week: "", fish_kg_week: "",
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<ResultState | null>(null);
-  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ hash: string; status: string } | null>(null);
+  const [txError, setTxError] = useState("");
 
   const contractReady = !!FOOTPRINT_CONTRACT_ADDRESS;
 
   async function handleSubmit() {
     if (!signer) return;
     setSubmitting(true);
-    setError("");
+    setTxError("");
     try {
-      const energyPayload = {
-        electricity_kwh: parseFloat(energy.electricity_kwh) || 0,
-        heating_type: energy.heating_type,
-        heating_kwh: parseFloat(energy.heating_kwh) || 0,
-      };
-      const transportPayload = {
-        car_km: parseFloat(transport.car_km) || 0,
-        car_type: transport.car_type,
-        domestic_flight_km: parseFloat(transport.domestic_flight_km) || 0,
-        short_haul_flight_km: parseFloat(transport.short_haul_flight_km) || 0,
-        long_haul_flight_km: parseFloat(transport.long_haul_flight_km) || 0,
-        rail_km: parseFloat(transport.rail_km) || 0,
-        bus_km: parseFloat(transport.bus_km) || 0,
-      };
-      const dietPayload = {
-        diet_type: diet.diet_type,
-        beef_kg_week: diet.beef_kg_week !== "" ? parseFloat(diet.beef_kg_week) : undefined,
-        dairy_litres_week: diet.dairy_litres_week !== "" ? parseFloat(diet.dairy_litres_week) : undefined,
-        fish_kg_week: diet.fish_kg_week !== "" ? parseFloat(diet.fish_kg_week) : undefined,
-      };
-
       const tx = await submitFootprint(signer, {
-        energyData: JSON.stringify(energyPayload),
-        transportData: JSON.stringify(transportPayload),
-        dietData: JSON.stringify(dietPayload),
+        energyData: JSON.stringify({
+          electricity_kwh: parseFloat(energy.electricity_kwh) || 0,
+          heating_type: energy.heating_type,
+          heating_kwh: parseFloat(energy.heating_kwh) || 0,
+        }),
+        transportData: JSON.stringify({
+          car_km: parseFloat(transport.car_km) || 0,
+          car_type: transport.car_type,
+          domestic_flight_km: parseFloat(transport.domestic_flight_km) || 0,
+          short_haul_flight_km: parseFloat(transport.short_haul_flight_km) || 0,
+          long_haul_flight_km: parseFloat(transport.long_haul_flight_km) || 0,
+          rail_km: parseFloat(transport.rail_km) || 0,
+          bus_km: parseFloat(transport.bus_km) || 0,
+        }),
+        dietData: JSON.stringify({
+          diet_type: diet.diet_type,
+          beef_kg_week: diet.beef_kg_week !== "" ? parseFloat(diet.beef_kg_week) : undefined,
+          dairy_litres_week: diet.dairy_litres_week !== "" ? parseFloat(diet.dairy_litres_week) : undefined,
+          fish_kg_week: diet.fish_kg_week !== "" ? parseFloat(diet.fish_kg_week) : undefined,
+        }),
         countryCode: country,
         year,
         label: `${year} annual`,
       });
-      setResult(tx);
+      setResult({ hash: tx.hash, status: tx.status });
     } catch (e: unknown) {
-      setError((e as Error).message ?? "Transaction failed.");
+      setTxError((e as Error).message ?? "Transaction failed.");
     } finally {
       setSubmitting(false);
     }
   }
 
   if (result) {
-    return <SubmissionResult result={result} onReset={() => { setResult(null); setStep(0); }} />;
+    return (
+      <Page>
+        <Label>Transaction submitted</Label>
+        <p style={{ fontSize: 12, color: "#555", marginBottom: 24 }}>
+          {result.status === "finalized"
+            ? "Your footprint has been calculated and recorded on-chain."
+            : result.status === "failed"
+            ? "The transaction was rejected. Check your wallet and try again."
+            : "GenLayer validators are reaching consensus. This usually takes under a minute."}
+        </p>
+        <pre style={{ fontSize: 11, color: "#3dcc7a", wordBreak: "break-all", whiteSpace: "pre-wrap", marginBottom: 32 }}>
+          {result.hash}
+        </pre>
+        <div style={{ display: "flex", gap: 12 }}>
+          <a href="/dashboard" className="form-btn-primary">view dashboard</a>
+          <button onClick={() => { setResult(null); setStep(0); }} className="form-btn-ghost">
+            calculate again
+          </button>
+        </div>
+        <FormStyles />
+      </Page>
+    );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-16">
-      {/* Step dots */}
-      <div className="flex items-center gap-2 mb-10">
-        {STEPS.map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
-            <div
-              className="flex items-center justify-center rounded-full text-xs transition-all duration-300"
-              style={{
-                width: i === step ? "2rem" : "1.5rem",
-                height: i === step ? "2rem" : "1.5rem",
-                backgroundColor: i < step ? "#3DCC7A" : i === step ? "#3DCC7A15" : "#1A1A1E",
-                border: `1px solid ${i <= step ? "#3DCC7A50" : "#2A2A2F"}`,
-                color: i < step ? "#0F0F11" : i === step ? "#3DCC7A" : "#6C6C74",
-                fontFamily: "Space Mono, monospace",
-                fontSize: "0.6rem",
-              }}
-            >
-              {i < step ? (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M2 5l2.5 2.5L8 2.5" stroke="#0F0F11" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              ) : (
-                String(i + 1)
-              )}
-            </div>
-            {i < STEPS.length - 1 && (
-              <div
-                className="h-px w-6 transition-colors duration-300"
-                style={{ backgroundColor: i < step ? "#3DCC7A50" : "#2A2A2F" }}
-              />
-            )}
+    <Page>
+      {/* Step indicator */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 40, borderBottom: "1px solid #1a1a1a" }}>
+        {STEPS.map((s, i) => (
+          <div
+            key={s}
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              padding: "8px 0",
+              marginRight: 24,
+              color: i === step ? "#e8e8e8" : i < step ? "#3dcc7a" : "#333",
+              borderBottom: i === step ? "1px solid #3dcc7a" : "1px solid transparent",
+              marginBottom: -1,
+              cursor: i < step ? "pointer" : "default",
+            }}
+            onClick={() => i < step && setStep(i)}
+          >
+            {s}
           </div>
         ))}
-        <p
-          className="ml-3 text-xs"
-          style={{ fontFamily: "Space Grotesk, sans-serif", color: "#6C6C74" }}
-        >
-          {STEPS[step]}
-        </p>
       </div>
 
-      <h1
-        className="text-4xl mb-8"
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.03em", color: "#EEEEEF", lineHeight: 1.05 }}
-      >
-        {STEPS[step]}
-      </h1>
-
-      {/* Step content */}
       {step === 0 && (
-        <EnergyStep energy={energy} setEnergy={setEnergy} country={country} setCountry={setCountry} />
+        <EnergyStep
+          energy={energy} setEnergy={setEnergy}
+          country={country} setCountry={setCountry}
+        />
       )}
       {step === 1 && (
         <TransportStep transport={transport} setTransport={setTransport} />
@@ -206,556 +167,340 @@ function CalculatorForm() {
       )}
       {step === 3 && (
         <ReviewStep
-          energy={energy}
-          transport={transport}
-          diet={diet}
-          country={country}
-          year={year}
-          contractReady={contractReady}
-          submitting={submitting}
-          error={error}
-          onSubmit={handleSubmit}
+          energy={energy} transport={transport} diet={diet}
+          country={country} year={year}
+          contractReady={contractReady} submitting={submitting}
+          error={txError} onSubmit={handleSubmit}
         />
       )}
 
-      {/* Navigation */}
       {step < 3 && (
-        <div className="flex justify-between mt-12">
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 40 }}>
           <button
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            onClick={() => setStep(s => Math.max(0, s - 1))}
             disabled={step === 0}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-20"
-            style={{ color: "#A0A0AB", borderColor: "#2A2A2F", fontFamily: "Space Grotesk, sans-serif" }}
+            className="form-btn-ghost"
+            style={{ opacity: step === 0 ? 0.2 : 1 }}
           >
-            Back
+            ← back
           </button>
           <button
-            onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-transform duration-150 hover:scale-95 active:scale-90"
-            style={{ backgroundColor: "#3DCC7A", color: "#0F0F11", fontFamily: "Space Grotesk, sans-serif" }}
+            onClick={() => setStep(s => Math.min(3, s + 1))}
+            className="form-btn-primary"
           >
-            Continue
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7h10M8 3l4 4-4 4" stroke="#0F0F11" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            continue →
           </button>
         </div>
       )}
-    </div>
+
+      <FormStyles />
+    </Page>
   );
 }
 
-// ------------------------------------------------------------------
+// ── Layout wrappers ────────────────────────────────────────────────────
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <label
-        className="block text-sm font-medium mb-1.5"
-        style={{ color: "#EEEEEF", fontFamily: "Space Grotesk, sans-serif" }}
-      >
-        {label}
-      </label>
-      {hint && (
-        <p className="text-xs mb-2" style={{ color: "#6C6C74" }}>
-          {hint}
-        </p>
-      )}
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "52px 24px 80px" }}>
       {children}
     </div>
   );
 }
 
-const inputClass =
-  "w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors duration-150";
-const inputStyle = {
-  backgroundColor: "#1A1A1E",
-  color: "#EEEEEF",
-  borderColor: "#2A2A2F",
-  fontFamily: "Space Grotesk, sans-serif",
-};
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 20 }}>
+      {children}
+    </p>
+  );
+}
 
-// ------------------------------------------------------------------
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <label style={{ display: "block", fontSize: 11, color: "#555", marginBottom: hint ? 4 : 8, letterSpacing: "0.05em" }}>
+        {label}
+      </label>
+      {hint && <p style={{ fontSize: 11, color: "#333", marginBottom: 8, lineHeight: 1.5 }}>{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+// ── Steps ──────────────────────────────────────────────────────────────
 
 function EnergyStep({
-  energy,
-  setEnergy,
-  country,
-  setCountry,
+  energy, setEnergy, country, setCountry,
 }: {
-  energy: EnergyData;
-  setEnergy: (v: EnergyData) => void;
+  energy: { electricity_kwh: string; heating_type: string; heating_kwh: string };
+  setEnergy: (v: typeof energy) => void;
   country: string;
   setCountry: (v: string) => void;
 }) {
   return (
-    <div>
-      <p className="text-sm mb-8" style={{ color: "#A0A0AB" }}>
-        Your home energy use — where the biggest lever usually is.
-      </p>
-      <Field label="Country" hint="Electricity emission intensity varies significantly by country.">
-        <select
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-          className={inputClass}
-          style={inputStyle}
-        >
+    <>
+      <Label>Energy</Label>
+      <Field label="country" hint="Determines electricity grid emission intensity.">
+        <select className="field-input" value={country} onChange={e => setCountry(e.target.value)}>
           {COUNTRIES.map(([code, name]) => (
             <option key={code} value={code}>{name}</option>
           ))}
         </select>
       </Field>
-      <Field label="Annual electricity use (kWh)" hint="Check your energy bills or smart meter. UK average is about 3,100 kWh.">
-        <input
-          type="number"
-          min="0"
+      <Field label="annual electricity use (kWh)" hint="Check your bills or smart meter. UK average ~3,100 kWh.">
+        <input className="field-input" type="number" min="0" placeholder="3100"
           value={energy.electricity_kwh}
-          onChange={(e) => setEnergy({ ...energy, electricity_kwh: e.target.value })}
-          placeholder="3100"
-          className={inputClass}
-          style={inputStyle}
-        />
+          onChange={e => setEnergy({ ...energy, electricity_kwh: e.target.value })} />
       </Field>
-      <Field label="Heating fuel type">
-        <select
-          value={energy.heating_type}
-          onChange={(e) => setEnergy({ ...energy, heating_type: e.target.value })}
-          className={inputClass}
-          style={inputStyle}
-        >
-          {[
-            ["gas", "Natural gas"],
-            ["oil", "Heating oil"],
-            ["electric", "Electric heating"],
-            ["heat_pump", "Heat pump"],
-            ["district", "District heating"],
-            ["wood", "Wood / biomass"],
-          ].map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
+      <Field label="heating fuel">
+        <select className="field-input" value={energy.heating_type}
+          onChange={e => setEnergy({ ...energy, heating_type: e.target.value })}>
+          {HEATING_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </Field>
-      <Field label="Annual heating energy (kWh)" hint="Equivalent kWh for your heating. For gas, multiply your therms by 29.3. UK average is around 12,000 kWh.">
-        <input
-          type="number"
-          min="0"
+      <Field label="annual heating energy (kWh)" hint="For gas, multiply therms by 29.3. UK average ~12,000 kWh.">
+        <input className="field-input" type="number" min="0" placeholder="12000"
           value={energy.heating_kwh}
-          onChange={(e) => setEnergy({ ...energy, heating_kwh: e.target.value })}
-          placeholder="12000"
-          className={inputClass}
-          style={inputStyle}
-        />
+          onChange={e => setEnergy({ ...energy, heating_kwh: e.target.value })} />
       </Field>
-    </div>
+    </>
   );
 }
 
-// ------------------------------------------------------------------
-
 function TransportStep({
-  transport,
-  setTransport,
+  transport, setTransport,
 }: {
-  transport: TransportData;
-  setTransport: (v: TransportData) => void;
+  transport: {
+    car_km: string; car_type: string; domestic_flight_km: string;
+    short_haul_flight_km: string; long_haul_flight_km: string;
+    rail_km: string; bus_km: string;
+  };
+  setTransport: (v: typeof transport) => void;
 }) {
   return (
-    <div>
-      <p className="text-sm mb-8" style={{ color: "#A0A0AB" }}>
-        Distance is more honest than number of trips. Check your car odometer
-        or a travel app for the year if you have it.
+    <>
+      <Label>Transport</Label>
+      <p style={{ fontSize: 12, color: "#444", marginBottom: 28, lineHeight: 1.6 }}>
+        Enter distances for the year. Add both legs of return journeys.
       </p>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Car km this year">
-          <input
-            type="number"
-            min="0"
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+        <Field label="car distance (km)">
+          <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.car_km}
-            onChange={(e) => setTransport({ ...transport, car_km: e.target.value })}
-            placeholder="12000"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setTransport({ ...transport, car_km: e.target.value })} />
         </Field>
-        <Field label="Car fuel type">
-          <select
-            value={transport.car_type}
-            onChange={(e) => setTransport({ ...transport, car_type: e.target.value })}
-            className={inputClass}
-            style={inputStyle}
-          >
-            {[
-              ["petrol", "Petrol"],
-              ["diesel", "Diesel"],
-              ["ev", "Electric"],
-              ["average", "Average (unknown)"],
-            ].map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
+        <Field label="car fuel">
+          <select className="field-input" value={transport.car_type}
+            onChange={e => setTransport({ ...transport, car_type: e.target.value })}>
+            {CAR_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
       </div>
-      <Field label="Domestic flight distance (km)" hint="Flights under 3 hours. Add both legs of round trips.">
-        <input
-          type="number"
-          min="0"
+      <Field label="domestic flights (km)" hint="Under ~3 hours.">
+        <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.domestic_flight_km}
-          onChange={(e) => setTransport({ ...transport, domestic_flight_km: e.target.value })}
-          placeholder="0"
-          className={inputClass}
-          style={inputStyle}
-        />
+          onChange={e => setTransport({ ...transport, domestic_flight_km: e.target.value })} />
       </Field>
-      <Field label="Short-haul flight distance (km)" hint="Flights 3–6 hours, e.g. London–Barcelona.">
-        <input
-          type="number"
-          min="0"
+      <Field label="short-haul flights (km)" hint="3–6 hours, e.g. London–Barcelona ~2,300 km return.">
+        <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.short_haul_flight_km}
-          onChange={(e) => setTransport({ ...transport, short_haul_flight_km: e.target.value })}
-          placeholder="0"
-          className={inputClass}
-          style={inputStyle}
-        />
+          onChange={e => setTransport({ ...transport, short_haul_flight_km: e.target.value })} />
       </Field>
-      <Field label="Long-haul flight distance (km)" hint="Flights over 6 hours, e.g. London–New York is roughly 5,500 km each way.">
-        <input
-          type="number"
-          min="0"
+      <Field label="long-haul flights (km)" hint="Over 6 hours, e.g. London–New York ~11,000 km return.">
+        <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.long_haul_flight_km}
-          onChange={(e) => setTransport({ ...transport, long_haul_flight_km: e.target.value })}
-          placeholder="0"
-          className={inputClass}
-          style={inputStyle}
-        />
+          onChange={e => setTransport({ ...transport, long_haul_flight_km: e.target.value })} />
       </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Rail km">
-          <input
-            type="number"
-            min="0"
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+        <Field label="rail (km)">
+          <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.rail_km}
-            onChange={(e) => setTransport({ ...transport, rail_km: e.target.value })}
-            placeholder="0"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setTransport({ ...transport, rail_km: e.target.value })} />
         </Field>
-        <Field label="Bus km">
-          <input
-            type="number"
-            min="0"
+        <Field label="bus (km)">
+          <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.bus_km}
-            onChange={(e) => setTransport({ ...transport, bus_km: e.target.value })}
-            placeholder="0"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setTransport({ ...transport, bus_km: e.target.value })} />
         </Field>
       </div>
-    </div>
+    </>
   );
 }
 
-// ------------------------------------------------------------------
-
-const dietOptions = [
-  ["vegan", "Vegan", "No animal products at all"],
-  ["vegetarian", "Vegetarian", "No meat, some dairy and eggs"],
-  ["pescatarian", "Pescatarian", "No meat, but fish"],
-  ["low_meat", "Low meat", "Meat once or twice a week"],
-  ["medium_meat", "Medium meat", "Meat most days"],
-  ["high_meat", "High meat", "Meat at most meals"],
-];
-
 function DietStep({
-  diet,
-  setDiet,
+  diet, setDiet,
 }: {
-  diet: DietData;
-  setDiet: (v: DietData) => void;
+  diet: { diet_type: string; beef_kg_week: string; dairy_litres_week: string; fish_kg_week: string };
+  setDiet: (v: typeof diet) => void;
 }) {
   return (
-    <div>
-      <p className="text-sm mb-8" style={{ color: "#A0A0AB" }}>
-        Diet is typically 20–30% of a personal footprint. Choose the pattern
-        that best fits. You can override with specific quantities below.
-      </p>
-      <Field label="Diet pattern">
-        <div className="grid grid-cols-1 gap-2">
-          {dietOptions.map(([value, label, desc]) => (
-            <button
+    <>
+      <Label>Diet</Label>
+      <Field label="diet pattern">
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {DIET_TYPES.map(([value, label]) => (
+            <label
               key={value}
-              onClick={() => setDiet({ ...diet, diet_type: value })}
-              className="flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-150 hover:scale-95"
               style={{
-                backgroundColor: diet.diet_type === value ? "#1A4D3230" : "#1A1A1E",
-                borderColor: diet.diet_type === value ? "#3DCC7A50" : "#2A2A2F",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "9px 12px",
+                cursor: "pointer",
+                fontSize: 12,
+                color: diet.diet_type === value ? "#e8e8e8" : "#555",
+                background: diet.diet_type === value ? "#111" : "transparent",
+                borderLeft: diet.diet_type === value ? "2px solid #3dcc7a" : "2px solid transparent",
               }}
             >
-              <span
-                className="mt-0.5 w-4 h-4 rounded-full border shrink-0 flex items-center justify-center"
-                style={{
-                  borderColor: diet.diet_type === value ? "#3DCC7A" : "#2A2A2F",
-                }}
-              >
-                {diet.diet_type === value && (
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#3DCC7A" }} />
-                )}
-              </span>
-              <div>
-                <p className="text-sm font-medium" style={{ color: "#EEEEEF" }}>{label}</p>
-                <p className="text-xs mt-0.5" style={{ color: "#6C6C74" }}>{desc}</p>
-              </div>
-            </button>
+              <input
+                type="radio"
+                name="diet_type"
+                value={value}
+                checked={diet.diet_type === value}
+                onChange={() => setDiet({ ...diet, diet_type: value })}
+                style={{ accentColor: "#3dcc7a" }}
+              />
+              {label}
+            </label>
           ))}
         </div>
       </Field>
-      <p className="text-xs mb-4" style={{ color: "#6C6C74" }}>
-        Optional: override with your actual weekly quantities.
+      <p style={{ fontSize: 11, color: "#333", marginBottom: 16, marginTop: 8 }}>
+        Optional — override with actual weekly quantities:
       </p>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Beef (kg/week)">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 16px" }}>
+        <Field label="beef (kg/week)">
+          <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.beef_kg_week}
-            onChange={(e) => setDiet({ ...diet, beef_kg_week: e.target.value })}
-            placeholder="0"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setDiet({ ...diet, beef_kg_week: e.target.value })} />
         </Field>
-        <Field label="Dairy (litres/week)">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
+        <Field label="dairy (L/week)">
+          <input className="field-input" type="number" min="0" step="0.1" placeholder="3.5"
             value={diet.dairy_litres_week}
-            onChange={(e) => setDiet({ ...diet, dairy_litres_week: e.target.value })}
-            placeholder="3.5"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setDiet({ ...diet, dairy_litres_week: e.target.value })} />
         </Field>
-        <Field label="Fish (kg/week)">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
+        <Field label="fish (kg/week)">
+          <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.fish_kg_week}
-            onChange={(e) => setDiet({ ...diet, fish_kg_week: e.target.value })}
-            placeholder="0"
-            className={inputClass}
-            style={inputStyle}
-          />
+            onChange={e => setDiet({ ...diet, fish_kg_week: e.target.value })} />
         </Field>
       </div>
-    </div>
+    </>
   );
 }
 
-// ------------------------------------------------------------------
-
 function ReviewStep({
-  energy,
-  transport,
-  diet,
-  country,
-  year,
-  contractReady,
-  submitting,
-  error,
-  onSubmit,
+  energy, transport, diet, country, year,
+  contractReady, submitting, error, onSubmit,
 }: {
-  energy: EnergyData;
-  transport: TransportData;
-  diet: DietData;
-  country: string;
-  year: number;
-  contractReady: boolean;
-  submitting: boolean;
-  error: string;
-  onSubmit: () => void;
+  energy: { electricity_kwh: string; heating_type: string; heating_kwh: string };
+  transport: {
+    car_km: string; car_type: string; domestic_flight_km: string;
+    short_haul_flight_km: string; long_haul_flight_km: string; rail_km: string; bus_km: string;
+  };
+  diet: { diet_type: string; beef_kg_week: string; dairy_litres_week: string; fish_kg_week: string };
+  country: string; year: number;
+  contractReady: boolean; submitting: boolean; error: string; onSubmit: () => void;
 }) {
   const rows = [
-    ["Country", country.toUpperCase()],
-    ["Year", year.toString()],
-    ["Electricity", `${energy.electricity_kwh || 0} kWh`],
-    ["Heating", `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
-    ["Car", `${transport.car_km || 0} km (${transport.car_type})`],
-    ["Flights", `D:${transport.domestic_flight_km || 0} S:${transport.short_haul_flight_km || 0} L:${transport.long_haul_flight_km || 0} km`],
-    ["Rail + bus", `${transport.rail_km || 0} + ${transport.bus_km || 0} km`],
-    ["Diet", diet.diet_type.replace("_", " ")],
+    ["country", country.toUpperCase()],
+    ["year", String(year)],
+    ["electricity", `${energy.electricity_kwh || 0} kWh`],
+    ["heating", `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
+    ["car", `${transport.car_km || 0} km (${transport.car_type})`],
+    ["flights", `${transport.domestic_flight_km || 0} + ${transport.short_haul_flight_km || 0} + ${transport.long_haul_flight_km || 0} km`],
+    ["rail", `${transport.rail_km || 0} km`],
+    ["bus", `${transport.bus_km || 0} km`],
+    ["diet", diet.diet_type.replace("_", " ")],
   ];
 
   return (
-    <div>
-      <p className="text-sm mb-8" style={{ color: "#A0A0AB" }}>
-        Review what you have entered. Once submitted, the footprint record is
-        permanent and tied to your wallet.
+    <>
+      <Label>Review</Label>
+      <p style={{ fontSize: 12, color: "#444", marginBottom: 28, lineHeight: 1.6 }}>
+        Once submitted the record is permanent on-chain, tied to your wallet.
       </p>
-      <div
-        className="rounded-xl border overflow-hidden mb-8"
-        style={{ borderColor: "#2A2A2F" }}
-      >
-        {rows.map(([label, value], i) => (
-          <div
-            key={label}
-            className="flex justify-between px-5 py-3 text-sm"
-            style={{
-              backgroundColor: i % 2 === 0 ? "#1A1A1E" : "#222228",
-            }}
-          >
-            <span style={{ color: "#6C6C74" }}>{label}</span>
-            <span
-              style={{
-                color: "#EEEEEF",
-                fontFamily: "Space Mono, monospace",
-                fontSize: "0.75rem",
-              }}
-            >
-              {value}
-            </span>
-          </div>
-        ))}
-      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 32 }}>
+        <tbody>
+          {rows.map(([label, value]) => (
+            <tr key={label} style={{ borderBottom: "1px solid #111" }}>
+              <td style={{ padding: "8px 0", color: "#444", paddingRight: 32 }}>{label}</td>
+              <td style={{ padding: "8px 0", color: "#e8e8e8" }}>{value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       {!contractReady && (
-        <div
-          className="p-4 rounded-xl border mb-6 text-sm"
-          style={{ backgroundColor: "#F59E0B10", borderColor: "#F59E0B30", color: "#F59E0B" }}
-        >
-          Contract address not configured. Deploy the contract and set{" "}
-          <code className="font-mono text-xs">NEXT_PUBLIC_FOOTPRINT_ADDRESS</code> to submit on-chain.
-        </div>
+        <p style={{ fontSize: 11, color: "#666", marginBottom: 20, padding: "10px 14px", border: "1px solid #1a1a1a" }}>
+          Contract address not set. Deploy the contract and configure{" "}
+          <code style={{ color: "#888" }}>NEXT_PUBLIC_FOOTPRINT_ADDRESS</code>.
+        </p>
       )}
 
       {error && (
-        <p className="text-sm text-[#EF4444] mb-4">{error}</p>
+        <p style={{ fontSize: 11, color: "#f87171", marginBottom: 16 }}>{error}</p>
       )}
 
       <button
         onClick={onSubmit}
         disabled={!contractReady || submitting}
-        className="w-full py-4 rounded-xl font-medium text-[#0F0F11] transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{
-          backgroundColor: "#3DCC7A",
-          fontFamily: "Space Grotesk, sans-serif",
-        }}
+        className="form-btn-primary"
+        style={{ opacity: (!contractReady || submitting) ? 0.4 : 1, cursor: (!contractReady || submitting) ? "not-allowed" : "pointer" }}
       >
-        {submitting ? "Submitting to chain..." : "Record my footprint on-chain"}
+        {submitting ? "submitting…" : "record on-chain →"}
       </button>
-    </div>
+    </>
   );
 }
 
-// ------------------------------------------------------------------
-
-function SubmissionResult({
-  result,
-  onReset,
-}: {
-  result: ResultState;
-  onReset: () => void;
-}) {
+function FormStyles() {
   return (
-    <div className="max-w-lg mx-auto px-6 py-20 text-center">
-      <div
-        className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center border"
-        style={{
-          borderColor:
-            result.status === "finalized"
-              ? "#3DCC7A30"
-              : result.status === "failed"
-              ? "#EF444430"
-              : "#F59E0B30",
-          backgroundColor:
-            result.status === "finalized"
-              ? "#1A4D3220"
-              : result.status === "failed"
-              ? "#EF444410"
-              : "#F59E0B10",
-        }}
-      >
-        {result.status === "finalized" ? (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M6 14l6 6 10-12" stroke="#3DCC7A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : result.status === "failed" ? (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M8 8l12 12M20 8L8 20" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-        ) : (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="animate-spin">
-            <circle cx="14" cy="14" r="10" stroke="#F59E0B" strokeWidth="2" strokeDasharray="40 20" />
-          </svg>
-        )}
-      </div>
-
-      <h2
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
-        className="text-3xl text-[#EEEEEF] mb-3"
-      >
-        {result.status === "finalized"
-          ? "Footprint recorded"
-          : result.status === "failed"
-          ? "Transaction failed"
-          : "Waiting for consensus"}
-      </h2>
-      <p className="text-sm mb-6" style={{ color: "#A0A0AB" }}>
-        {result.status === "finalized"
-          ? "Your carbon footprint has been calculated and recorded on-chain. View it in your dashboard."
-          : result.status === "failed"
-          ? "The transaction did not go through. Check your wallet and try again."
-          : "GenLayer validators are reaching consensus on your footprint calculation. This usually takes under a minute."}
-      </p>
-
-      <div
-        className="p-3 rounded-lg mb-8 text-left"
-        style={{ backgroundColor: "#1A1A1E" }}
-      >
-        <p className="text-xs" style={{ color: "#6C6C74" }}>Transaction</p>
-        <p
-          className="text-xs mt-1 break-all"
-          style={{ color: "#3DCC7A", fontFamily: "Space Mono, monospace" }}
-        >
-          {result.hash}
-        </p>
-      </div>
-
-      <div className="flex gap-3">
-        <a
-          href="/dashboard"
-          className="flex-1 py-3 rounded-xl text-sm font-medium transition-transform duration-150 hover:scale-95 active:scale-90"
-          style={{
-            backgroundColor: "#3DCC7A",
-            color: "#0F0F11",
-            fontFamily: "Space Grotesk, sans-serif",
-          }}
-        >
-          View dashboard
-        </a>
-        <button
-          onClick={onReset}
-          className="flex-1 py-3 rounded-xl text-sm font-medium border transition-all duration-150 hover:scale-95 active:scale-90"
-          style={{
-            color: "#A0A0AB",
-            borderColor: "#2A2A2F",
-            fontFamily: "Space Grotesk, sans-serif",
-          }}
-        >
-          Calculate again
-        </button>
-      </div>
-    </div>
+    <style>{`
+      .field-input {
+        width: 100%;
+        background: #0f0f0f;
+        border: 1px solid #1e1e1e;
+        color: #e8e8e8;
+        font-family: inherit;
+        font-size: 13px;
+        padding: 9px 12px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        transition: border-color 0.15s;
+      }
+      .field-input:focus { border-color: #3dcc7a; }
+      .form-btn-primary {
+        background: none;
+        border: 1px solid #3dcc7a;
+        color: #3dcc7a;
+        font-family: inherit;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        padding: 9px 18px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.15s, color 0.15s;
+      }
+      .form-btn-primary:hover { background: #3dcc7a; color: #0a0a0a; }
+      .form-btn-ghost {
+        background: none;
+        border: 1px solid #1e1e1e;
+        color: #444;
+        font-family: inherit;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        padding: 9px 18px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .form-btn-ghost:hover { border-color: #333; color: #666; }
+    `}</style>
   );
 }

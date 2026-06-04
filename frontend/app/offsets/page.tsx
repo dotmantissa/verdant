@@ -1,29 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { WalletGate } from "@/components/WalletBar";
+import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { retireOffsets } from "@/lib/genlayer";
 import { OFFSETS_CONTRACT_ADDRESS } from "@/lib/constants";
 
-type ProjectDraft = {
+type Project = {
   project_id: string;
   name: string;
   description: string;
-  project_url: string;
   registry: string;
   country: string;
   project_type: string;
   price_usd_per_tonne: string;
 };
 
-const SEED_PROJECTS: ProjectDraft[] = [
+const PROJECTS: Project[] = [
   {
     project_id: "VCS-934",
     name: "Kariba REDD+ Forest Protection",
-    description:
-      "Protecting 785,000 hectares of Zimbabwe forest from illegal logging and agricultural conversion. Certified under Verra VCS.",
-    project_url: "https://registry.verra.org/app/projectDetail/VCS/934",
+    description: "785,000 ha of Zimbabwe forest protected from illegal logging and agricultural conversion.",
     registry: "verra",
     country: "Zimbabwe",
     project_type: "forestry",
@@ -32,9 +29,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "GS-5409",
     name: "Olkaria Geothermal Expansion",
-    description:
-      "Expanding Kenya's Olkaria geothermal plant, reducing dependence on diesel and heavy fuel oil generation in the East African power grid.",
-    project_url: "https://registry.goldstandard.org",
+    description: "Kenya's Olkaria geothermal plant expansion, replacing diesel and heavy fuel oil generation.",
     registry: "gold_standard",
     country: "Kenya",
     project_type: "renewable_energy",
@@ -43,9 +38,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "VCS-1566",
     name: "Mai Ndombe REDD+",
-    description:
-      "Protecting 1.5 million hectares of humid tropical forest in the Democratic Republic of Congo.",
-    project_url: "https://registry.verra.org",
+    description: "1.5 million ha of tropical forest protection in the Democratic Republic of Congo.",
     registry: "verra",
     country: "DR Congo",
     project_type: "forestry",
@@ -54,9 +47,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "GS-2185",
     name: "Improved Cookstoves Ethiopia",
-    description:
-      "Distributing efficient biomass cookstoves to households in rural Ethiopia, cutting wood fuel use and indoor air pollution.",
-    project_url: "https://registry.goldstandard.org",
+    description: "Efficient biomass cookstoves to rural Ethiopian households, reducing wood fuel use.",
     registry: "gold_standard",
     country: "Ethiopia",
     project_type: "cookstoves",
@@ -65,9 +56,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "VCS-2228",
     name: "Blue Carbon Mangrove Restoration",
-    description:
-      "Restoring degraded mangrove ecosystems along the Tanzanian coast. Mangroves store roughly 10x more carbon per hectare than tropical forests.",
-    project_url: "https://registry.verra.org",
+    description: "Mangrove ecosystem restoration along the Tanzanian coast.",
     registry: "verra",
     country: "Tanzania",
     project_type: "blue_carbon",
@@ -76,9 +65,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "GS-1788",
     name: "Biogas Digesters Rural India",
-    description:
-      "Agricultural biogas digesters in Maharashtra and Uttar Pradesh, converting livestock waste to cooking fuel and replacing wood.",
-    project_url: "https://registry.goldstandard.org",
+    description: "Livestock waste biogas digesters in Maharashtra and Uttar Pradesh.",
     registry: "gold_standard",
     country: "India",
     project_type: "methane_capture",
@@ -87,375 +74,254 @@ const SEED_PROJECTS: ProjectDraft[] = [
 ];
 
 const TYPE_LABELS: Record<string, string> = {
-  forestry: "Forest protection",
+  forestry: "Forestry",
   renewable_energy: "Renewable energy",
   methane_capture: "Methane capture",
-  energy_efficiency: "Energy efficiency",
   blue_carbon: "Blue carbon",
-  cookstoves: "Clean cookstoves",
-  other: "Other",
-};
-
-const REGISTRY_LABEL: Record<string, string> = {
-  verra: "Verra VCS",
-  gold_standard: "Gold Standard",
-};
-
-const REGISTRY_COLOR: Record<string, string> = {
-  verra: "#3DCC7A",
-  gold_standard: "#F59E0B",
+  cookstoves: "Cookstoves",
 };
 
 export default function OffsetsPage() {
   return (
     <WalletGate>
-      <OffsetMarketplace />
+      <Marketplace />
     </WalletGate>
   );
 }
 
-function OffsetMarketplace() {
+function Marketplace() {
   const { signer } = useWallet();
-  const [retiring, setRetiring] = useState<string | null>(null);
-  const [retireResult, setRetireResult] = useState<{ pid: string; hash: string; status: string } | null>(null);
-  const [retireForm, setRetireForm] = useState<{ pid: string; tonnes: string; name: string; reason: string } | null>(null);
+  const [filter, setFilter] = useState("all");
+  const [modal, setModal] = useState<Project | null>(null);
+  const [form, setForm] = useState({ tonnes: "1.0", name: "", reason: "" });
+  const [retiring, setRetiring] = useState(false);
+  const [result, setResult] = useState<{ hash: string; project: string } | null>(null);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<string>("all");
 
   const contractReady = !!OFFSETS_CONTRACT_ADDRESS;
+  const types = ["all", ...new Set(PROJECTS.map(p => p.project_type))];
+  const filtered = filter === "all" ? PROJECTS : PROJECTS.filter(p => p.project_type === filter);
 
   async function handleRetire() {
-    if (!signer || !retireForm) return;
-    setRetiring(retireForm.pid);
+    if (!signer || !modal) return;
+    setRetiring(true);
     setError("");
     try {
-      const result = await retireOffsets(signer, {
-        projectId: retireForm.pid,
-        tonnesCo2e: retireForm.tonnes,
-        beneficiaryName: retireForm.name,
-        reason: retireForm.reason,
+      const tx = await retireOffsets(signer, {
+        projectId: modal.project_id,
+        tonnesCo2e: form.tonnes,
+        beneficiaryName: form.name,
+        reason: form.reason,
       });
-      setRetireResult({ pid: retireForm.pid, hash: result.hash, status: result.status });
-      setRetireForm(null);
+      setResult({ hash: tx.hash, project: modal.name });
+      setModal(null);
     } catch (e: unknown) {
       setError((e as Error).message ?? "Retirement failed.");
     } finally {
-      setRetiring(null);
+      setRetiring(false);
     }
   }
 
-  const projectTypes = ["all", ...new Set(SEED_PROJECTS.map((p) => p.project_type))];
-  const filtered = filter === "all" ? SEED_PROJECTS : SEED_PROJECTS.filter((p) => p.project_type === filter);
-
   return (
-    <div className="max-w-6xl mx-auto px-6 py-16">
-      <p
-        className="text-xs uppercase tracking-[0.2em] mb-3"
-        style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}
-      >
-        Verified projects
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "52px 24px 80px" }}>
+      {/* Header */}
+      <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 20 }}>
+        Verified offset projects
       </p>
-      <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-end mb-12">
-        <div>
-          <h1
-            className="text-4xl mb-4"
-            style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.03em", color: "#EEEEEF" }}
-          >
-            Offset marketplace
-          </h1>
-          <p className="text-sm max-w-lg leading-relaxed" style={{ color: "#A0A0AB", fontFamily: "Space Grotesk, sans-serif" }}>
-            Each project is checked against its public registry before you can
-            retire against it. Fraudulent or inactive projects are blocked automatically.
-          </p>
-        </div>
-        {!contractReady && (
-          <div
-            className="px-4 py-3 rounded-xl border text-xs max-w-sm"
-            style={{ backgroundColor: "#F59E0B08", borderColor: "#F59E0B25", color: "#F59E0B", fontFamily: "Space Grotesk, sans-serif" }}
-          >
-            Contract not configured. Deploy and set{" "}
-            <code className="font-mono">NEXT_PUBLIC_OFFSETS_ADDRESS</code> to enable retirements.
-          </div>
-        )}
-      </div>
+      <p style={{ fontSize: 12, color: "#444", maxWidth: 560, lineHeight: 1.7, marginBottom: 36 }}>
+        Each project is checked against its Verra VCS or Gold Standard public registry before
+        retirement is permitted. Inactive or fraudulent projects are rejected automatically.
+      </p>
 
-      {/* Filter pills */}
-      <div className="flex flex-wrap gap-2 mb-10">
-        {projectTypes.map((t) => (
+      {!contractReady && (
+        <div style={{ fontSize: 11, color: "#666", padding: "10px 14px", border: "1px solid #1a1a1a", marginBottom: 28 }}>
+          Offsets contract not configured. Deploy and set{" "}
+          <code style={{ color: "#888" }}>NEXT_PUBLIC_OFFSETS_ADDRESS</code> to enable retirements.
+        </div>
+      )}
+
+      {result && (
+        <div style={{ fontSize: 11, color: "#3dcc7a", padding: "10px 14px", border: "1px solid #1a3d26", marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Retirement submitted — {result.project} — tx: {result.hash.slice(0, 20)}…</span>
+          <button onClick={() => setResult(null)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontFamily: "inherit", fontSize: 11 }}>dismiss</button>
+        </div>
+      )}
+
+      {/* Type filter */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 32, flexWrap: "wrap" }}>
+        {types.map(t => (
           <button
             key={t}
             onClick={() => setFilter(t)}
-            className="px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-150 hover:scale-95"
             style={{
-              backgroundColor: filter === t ? "#3DCC7A" : "#1A1A1E",
-              color: filter === t ? "#0F0F11" : "#A0A0AB",
-              border: `1px solid ${filter === t ? "#3DCC7A" : "#2A2A2F"}`,
-              fontFamily: "Space Grotesk, sans-serif",
+              background: "none",
+              border: `1px solid ${filter === t ? "#3dcc7a" : "#1e1e1e"}`,
+              color: filter === t ? "#3dcc7a" : "#444",
+              fontFamily: "inherit",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              padding: "4px 12px",
+              cursor: "pointer",
             }}
           >
-            {t === "all" ? "All" : TYPE_LABELS[t] ?? t}
+            {t === "all" ? "all" : TYPE_LABELS[t] ?? t}
           </button>
         ))}
       </div>
 
-      {retireResult && (
+      {/* Projects table */}
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+            {["id", "project", "type", "country", "registry", "price / t CO₂e", ""].map(h => (
+              <th key={h} style={{ padding: "6px 16px 6px 0", textAlign: "left", fontSize: 10, letterSpacing: "0.08em", color: "#333", fontWeight: 400 }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(p => (
+            <ProjectRow
+              key={p.project_id}
+              project={p}
+              contractReady={contractReady}
+              onRetire={() => {
+                setModal(p);
+                setForm({ tonnes: "1.0", name: "", reason: "" });
+                setError("");
+              }}
+            />
+          ))}
+        </tbody>
+      </table>
+
+      {/* Modal */}
+      {modal && (
         <div
-          className="flex items-center justify-between p-4 rounded-xl border mb-8 text-sm"
-          style={{ backgroundColor: "#0D2B1A", borderColor: "#3DCC7A25" }}
-        >
-          <div className="flex items-center gap-3">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8l4 4 6-7" stroke="#3DCC7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span style={{ color: "#3DCC7A", fontFamily: "Space Grotesk, sans-serif" }}>
-              Retirement submitted
-            </span>
-            <span style={{ color: "#6C6C74", fontFamily: "Space Mono, monospace", fontSize: "0.7rem" }}>
-              {retireResult.hash.slice(0, 18)}…
-            </span>
-          </div>
-          <button onClick={() => setRetireResult(null)} className="text-xs" style={{ color: "#6C6C74" }}>
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <p className="text-sm mb-6" style={{ color: "#EF4444", fontFamily: "Space Grotesk, sans-serif" }}>{error}</p>
-      )}
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((project) => (
-          <ProjectCard
-            key={project.project_id}
-            project={project}
-            isRetiring={retiring === project.project_id}
-            onRetire={() =>
-              setRetireForm({ pid: project.project_id, tonnes: "1.0", name: "", reason: "Personal carbon footprint offset" })
-            }
-            contractReady={contractReady}
-          />
-        ))}
-      </div>
-
-      {retireForm && (
-        <RetireModal
-          project={SEED_PROJECTS.find((p) => p.project_id === retireForm.pid)!}
-          form={retireForm}
-          onChange={(f) => setRetireForm(f)}
-          onClose={() => setRetireForm(null)}
-          onConfirm={handleRetire}
-          loading={!!retiring}
-        />
-      )}
-    </div>
-  );
-}
-
-function ProjectCard({
-  project,
-  isRetiring,
-  onRetire,
-  contractReady,
-}: {
-  project: ProjectDraft;
-  isRetiring: boolean;
-  onRetire: () => void;
-  contractReady: boolean;
-}) {
-  const regColor = REGISTRY_COLOR[project.registry] ?? "#A0A0AB";
-  const regLabel = REGISTRY_LABEL[project.registry] ?? project.registry;
-
-  return (
-    <div
-      className="p-5 rounded-2xl border flex flex-col"
-      style={{ backgroundColor: "#111115", borderColor: "#2A2A2F" }}
-    >
-      {/* Top meta */}
-      <div className="flex items-center justify-between mb-4">
-        <span
-          className="text-xs px-2.5 py-1 rounded-full"
           style={{
-            backgroundColor: `${regColor}12`,
-            color: regColor,
-            border: `1px solid ${regColor}25`,
-            fontFamily: "Space Mono, monospace",
-            fontSize: "0.6rem",
-            letterSpacing: "0.1em",
+            position: "fixed", inset: 0, background: "rgba(10,10,10,0.9)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 100, padding: 24,
           }}
+          onClick={e => e.target === e.currentTarget && setModal(null)}
         >
-          {regLabel}
-        </span>
-        <span className="text-xs" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-          {project.country}
-        </span>
-      </div>
-
-      {/* Type label */}
-      <p className="text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-        {TYPE_LABELS[project.project_type] ?? project.project_type}
-      </p>
-
-      <h3
-        className="text-lg mb-3 leading-snug"
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, letterSpacing: "-0.02em", color: "#EEEEEF" }}
-      >
-        {project.name}
-      </h3>
-
-      <p className="text-xs leading-relaxed flex-1 mb-5" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-        {project.description}
-      </p>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "#2A2A2F" }}>
-        <div>
-          <p
-            style={{ fontFamily: "Space Mono, monospace", color: "#EEEEEF", fontSize: "0.95rem", fontWeight: 700, letterSpacing: "-0.02em" }}
-          >
-            ${project.price_usd_per_tonne}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-            per tonne CO₂e
-          </p>
-        </div>
-        <button
-          onClick={onRetire}
-          disabled={isRetiring || !contractReady}
-          className="px-4 py-2 rounded-xl text-xs font-medium transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: "#3DCC7A",
-            color: "#0F0F11",
-            fontFamily: "Space Grotesk, sans-serif",
-          }}
-        >
-          {isRetiring ? "Processing..." : "Retire"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-type RetireFormState = { pid: string; tonnes: string; name: string; reason: string };
-
-function RetireModal({
-  project,
-  form,
-  onChange,
-  onClose,
-  onConfirm,
-  loading,
-}: {
-  project: ProjectDraft;
-  form: RetireFormState;
-  onChange: (f: RetireFormState) => void;
-  onClose: () => void;
-  onConfirm: () => void;
-  loading: boolean;
-}) {
-  const inputStyle = {
-    backgroundColor: "#0F0F11",
-    color: "#EEEEEF",
-    borderColor: "#2A2A2F",
-    fontFamily: "Space Grotesk, sans-serif",
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ backgroundColor: "#0F0F11CC", backdropFilter: "blur(12px)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border p-7"
-        style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
-      >
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <p className="text-xs mb-1" style={{ color: "#6C6C74", fontFamily: "Space Mono, monospace", letterSpacing: "0.15em" }}>
-              RETIRING OFFSETS
+          <div style={{ background: "#0f0f0f", border: "1px solid #1e1e1e", width: "100%", maxWidth: 440, padding: 32 }}>
+            <p style={{ fontSize: 10, letterSpacing: "0.12em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 12 }}>
+              Retire offsets
             </p>
-            <h3
-              className="text-xl leading-snug max-w-[280px]"
-              style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#EEEEEF" }}
-            >
-              {project.name}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="ml-4 mt-1 shrink-0 transition-colors"
-            style={{ color: "#6C6C74" }}
-            onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.color = "#EEEEEF")}
-            onMouseOut={(e) => ((e.currentTarget as HTMLElement).style.color = "#6C6C74")}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M3 3l12 12M15 3L3 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+            <p style={{ fontSize: 14, color: "#e8e8e8", marginBottom: 6 }}>{modal.name}</p>
+            <p style={{ fontSize: 11, color: "#444", marginBottom: 28 }}>{modal.project_id} · ${modal.price_usd_per_tonne} / t CO₂e</p>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-              Tonnes CO₂e to retire
-            </label>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={form.tonnes}
-              onChange={(e) => onChange({ ...form, tonnes: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={{ ...inputStyle, fontFamily: "Space Mono, monospace" }}
-            />
-          </div>
-          <div>
-            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-              Beneficiary name
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => onChange({ ...form, name: e.target.value })}
-              placeholder="Your name or organisation"
-              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
-              Reason
-            </label>
-            <input
-              type="text"
-              value={form.reason}
-              onChange={(e) => onChange({ ...form, reason: e.target.value })}
-              placeholder="e.g. 2024 personal footprint"
-              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={inputStyle}
-            />
-          </div>
-        </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>tonnes CO₂e</label>
+                <input
+                  type="number" min="0.01" step="0.01"
+                  value={form.tonnes}
+                  onChange={e => setForm(f => ({ ...f, tonnes: e.target.value }))}
+                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>beneficiary name</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="your name or organisation"
+                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>reason</label>
+                <input
+                  type="text"
+                  value={form.reason}
+                  onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+                  placeholder="e.g. 2024 annual footprint offset"
+                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                />
+              </div>
+            </div>
 
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm border transition-all duration-150 hover:scale-95"
-            style={{ color: "#A0A0AB", borderColor: "#2A2A2F", fontFamily: "Space Grotesk, sans-serif" }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading || !form.tonnes || !form.name || !form.reason}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-150 hover:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "#3DCC7A", color: "#0F0F11", fontFamily: "Space Grotesk, sans-serif" }}
-          >
-            {loading ? "Submitting..." : "Confirm retirement"}
-          </button>
+            {error && <p style={{ fontSize: 11, color: "#f87171", marginBottom: 16 }}>{error}</p>}
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setModal(null)}
+                style={{ flex: 1, background: "none", border: "1px solid #1e1e1e", color: "#444", fontFamily: "inherit", fontSize: 11, letterSpacing: "0.08em", padding: "9px 0", cursor: "pointer" }}
+              >
+                cancel
+              </button>
+              <button
+                onClick={handleRetire}
+                disabled={retiring || !form.tonnes || !form.name || !form.reason}
+                style={{
+                  flex: 2, background: "none",
+                  border: "1px solid #3dcc7a", color: "#3dcc7a",
+                  fontFamily: "inherit", fontSize: 11, letterSpacing: "0.08em",
+                  padding: "9px 0", cursor: retiring ? "not-allowed" : "pointer",
+                  opacity: (retiring || !form.tonnes || !form.name || !form.reason) ? 0.4 : 1,
+                }}
+              >
+                {retiring ? "submitting…" : "confirm retirement →"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+function ProjectRow({
+  project, contractReady, onRetire,
+}: {
+  project: Project;
+  contractReady: boolean;
+  onRetire: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const regColor = project.registry === "verra" ? "#3dcc7a" : project.registry === "gold_standard" ? "#f59e0b" : "#555";
+
+  return (
+    <>
+      <tr
+        style={{ borderBottom: "1px solid #111", cursor: "pointer" }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <td style={{ padding: "12px 16px 12px 0", color: "#444", fontSize: 11 }}>{project.project_id}</td>
+        <td style={{ padding: "12px 16px 12px 0", color: "#e8e8e8" }}>{project.name}</td>
+        <td style={{ padding: "12px 16px 12px 0", color: "#555", fontSize: 11 }}>{TYPE_LABELS[project.project_type] ?? project.project_type}</td>
+        <td style={{ padding: "12px 16px 12px 0", color: "#555", fontSize: 11 }}>{project.country}</td>
+        <td style={{ padding: "12px 16px 12px 0", fontSize: 11 }}>
+          <span style={{ color: regColor }}>{project.registry === "gold_standard" ? "Gold Standard" : "Verra VCS"}</span>
+        </td>
+        <td style={{ padding: "12px 16px 12px 0", color: "#e8e8e8", fontWeight: 500 }}>
+          ${project.price_usd_per_tonne}
+        </td>
+        <td style={{ padding: "12px 0" }}>
+          <button
+            onClick={e => { e.stopPropagation(); onRetire(); }}
+            disabled={!contractReady}
+            style={{
+              background: "none", border: "1px solid #1e1e1e",
+              color: "#555", fontFamily: "inherit", fontSize: 10,
+              letterSpacing: "0.06em", padding: "4px 12px", cursor: contractReady ? "pointer" : "not-allowed",
+              opacity: contractReady ? 1 : 0.3,
+              whiteSpace: "nowrap",
+            }}
+          >
+            retire
+          </button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr style={{ borderBottom: "1px solid #111" }}>
+          <td colSpan={7} style={{ padding: "8px 0 14px", fontSize: 11, color: "#444", lineHeight: 1.65 }}>
+            {project.description}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
