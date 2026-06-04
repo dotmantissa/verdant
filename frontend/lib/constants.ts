@@ -118,4 +118,11 @@ export const OFFSETS_ABI = [
     inputs: [{ name: "owner", type: "address" }],
     outputs: [{ name: "", type: "int256" }],
   },
+  {
+    name: "get_project_total_retired",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "project_id", type: "string" }],
+    outputs: [{ name: "", type: "int256" }],
+  },
 ];

@@ -120,9 +120,9 @@ function CalculatorForm() {
       };
       const dietPayload = {
         diet_type: diet.diet_type,
-        beef_kg_week: parseFloat(diet.beef_kg_week) || undefined,
-        dairy_litres_week: parseFloat(diet.dairy_litres_week) || undefined,
-        fish_kg_week: parseFloat(diet.fish_kg_week) || undefined,
+        beef_kg_week: diet.beef_kg_week !== "" ? parseFloat(diet.beef_kg_week) : undefined,
+        dairy_litres_week: diet.dairy_litres_week !== "" ? parseFloat(diet.dairy_litres_week) : undefined,
+        fish_kg_week: diet.fish_kg_week !== "" ? parseFloat(diet.fish_kg_week) : undefined,
       };
 
       const tx = await submitFootprint(signer, {

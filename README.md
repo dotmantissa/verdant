@@ -6,7 +6,6 @@ Every calculator gives a different number depending on who built it and what the
 
 No sponsors. No greenwashing. Numbers you can trust.
 
----
 
 ## What it does
 
@@ -14,17 +13,11 @@ You enter your annual energy consumption, how you travel, and what you eat. The 
 
 For carbon offsets, each project in the registry is checked against its Verra or Gold Standard public listing before it can be used. The AI reads the monitoring data and flags anything that does not add up.
 
----
 
 ## Data sources
 
-- **IEA** — electricity carbon intensity by country (gCO₂/kWh)
-- **DEFRA 2024** — greenhouse gas conversion factors for transport (UK)
-- **Poore & Nemecek (2018)** — global food system emissions, via Our World in Data
-- **Verra VCS public registry** — offset project status and issuance data
-- **Gold Standard public registry** — offset project verification
+Electricity carbon intensity by country comes from the IEA via Our World in Data. Greenhouse gas conversion factors for transport come from DEFRA 2024. Food system emissions are drawn from Poore and Nemecek (2018), also via Our World in Data. Offset project status and issuance data come from the Verra VCS public registry and the Gold Standard public registry.
 
----
 
 ## Project structure
 
@@ -50,18 +43,12 @@ verdant/
 └── README.md
 ```
 
----
 
 ## Getting started
 
-### Requirements
+You need Python 3.10 or later, Node.js 18 or later, GenLayer Studio for local contract testing and deployment, and a MetaMask-compatible wallet.
 
-- Python 3.10+
-- Node.js 18+
-- GenLayer Studio (for local contract testing and deployment)
-- A MetaMask-compatible wallet
-
-### Run GenLayer Studio
+Start GenLayer Studio:
 
 ```bash
 genlayer up
@@ -69,29 +56,28 @@ genlayer up
 
 Studio starts at `http://127.0.0.1:4000`.
 
-### Deploy the contracts
+Deploy both contracts and note the addresses from the output:
 
 ```bash
 genlayer deploy --contract contracts/verdant_footprint.py
 genlayer deploy --contract contracts/verdant_offsets.py
 ```
 
-Note both contract addresses from the output.
-
-### Set up the frontend
+Set up the frontend:
 
 ```bash
 cd frontend
 cp .env.example .env.local
-# edit .env.local with the contract addresses from above
 ```
+
+Edit `.env.local` with the contract addresses:
 
 ```
 NEXT_PUBLIC_FOOTPRINT_ADDRESS=0x...
 NEXT_PUBLIC_OFFSETS_ADDRESS=0x...
 ```
 
-Then:
+Then install and start the dev server:
 
 ```bash
 npm install
@@ -100,64 +86,35 @@ npm run dev
 
 Open `http://localhost:3000`. Connect your wallet to GenLayer Studio (chain ID 61999, RPC `http://127.0.0.1:4000/api`). The app will prompt you to switch networks if you are on the wrong one.
 
----
 
 ## Running the tests
 
-Tests run against a live GenLayer Studio node. They skip automatically when Studio is not running.
+Tests run against a live GenLayer Studio node and skip automatically when Studio is not running.
 
 ```bash
-# from the project root
 genlayer up
 pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-The test suite covers:
+The suite covers footprint calculation returning the correct JSON structure with a breakdown by category, high-meat diet producing higher diet emissions than vegan, EV producing lower transport emissions than petrol, China grid carbon intensity being higher than Sweden, year and label being persisted correctly in on-chain records, invalid year values being clamped to a valid default, record count incrementing on each submission, history accumulating across multiple calls, emission context returning plausible global averages, malformed input not crashing the contract, project submission returning a valid verification result, project status codes being within the expected range, retiring against a non-existent project raising an error, and zero or negative retirement amounts being rejected.
 
-- Footprint calculation returns correct JSON structure with breakdown by category
-- High-meat diet has higher diet emissions than vegan
-- EV has lower transport emissions than petrol car
-- China grid carbon intensity is higher than Sweden
-- Year and label are persisted correctly in on-chain records
-- Invalid year values are clamped to a valid default
-- Record count increments on each submission
-- History accumulates across multiple calls
-- Emission context returns plausible global averages
-- Malformed input does not crash the contract
-- Project submission returns a valid verification result
-- Project status codes are within expected range
-- Retiring against a non-existent project raises an error
-- Zero or negative retirement amounts are rejected
-
----
 
 ## How the contracts work
 
 Verdant uses GenLayer intelligent contracts, which can make HTTP requests and run LLM prompts as part of transaction execution. Multiple validators independently re-run the contract logic and reach consensus on the result before it is written to chain.
 
-**verdant_footprint.py**
+`verdant_footprint.py` takes energy, transport, and diet data as JSON, fetches emission factors from real sources, and uses an LLM to calculate CO2e. The consensus principle requires all validators to agree within 5 percent — if they do not, the transaction fails. The result is stored against the caller's address.
 
-Takes energy, transport, and diet data as JSON, fetches emission factors from real sources, and uses an LLM to calculate CO₂e. The consensus principle requires all validators to agree within 5% — if they do not, the transaction fails. The result is stored against the caller's address.
+`verdant_offsets.py` fetches a project's page from the Verra or Gold Standard registry API when a project is submitted. An LLM then assesses whether the monitoring data supports the claimed sequestration and whether there are any fraud indicators. Only verified projects can be retired against.
 
-**verdant_offsets.py**
-
-When a project is submitted, the contract fetches its page from the Verra or Gold Standard registry API. An LLM then assesses whether the monitoring data supports the claimed sequestration and whether there are any fraud indicators. Only verified projects (status 1) can be retired against.
-
----
 
 ## Wallet connection
 
-The app enforces GenLayer Studio as the connected network. If your wallet is on a different network, it will prompt you to switch automatically. You can add GenLayer Studio manually:
-
-- Network name: GenLayer Studio
-- Chain ID: 61999
-- RPC URL: `http://127.0.0.1:4000/api`
-- Currency symbol: GEN
+The app enforces GenLayer Studio as the connected network. If your wallet is on a different network, it will prompt you to switch automatically. You can add GenLayer Studio manually with network name GenLayer Studio, chain ID 61999, RPC URL `http://127.0.0.1:4000/api`, and currency symbol GEN.
 
 A disconnect button is visible in the header when connected.
 
----
 
 ## License
 

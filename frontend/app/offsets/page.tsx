@@ -483,7 +483,7 @@ function RetireModal({
           </button>
           <button
             onClick={onConfirm}
-            disabled={loading || !form.tonnes || !form.name}
+            disabled={loading || !form.tonnes || !form.name || !form.reason}
             className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 hover:scale-95 disabled:opacity-40"
             style={{
               backgroundColor: "#3DCC7A",
