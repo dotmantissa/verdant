@@ -147,33 +147,52 @@ function CalculatorForm() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
-      {/* Header */}
-      <p
-        style={{ fontFamily: "Space Mono, monospace", letterSpacing: "0.2em", color: "#6C6C74" }}
-        className="text-xs uppercase mb-3"
-      >
-        Step {step + 1} of {STEPS.length}
-      </p>
+      {/* Step dots */}
+      <div className="flex items-center gap-2 mb-10">
+        {STEPS.map((label, i) => (
+          <div key={label} className="flex items-center gap-2">
+            <div
+              className="flex items-center justify-center rounded-full text-xs transition-all duration-300"
+              style={{
+                width: i === step ? "2rem" : "1.5rem",
+                height: i === step ? "2rem" : "1.5rem",
+                backgroundColor: i < step ? "#3DCC7A" : i === step ? "#3DCC7A15" : "#1A1A1E",
+                border: `1px solid ${i <= step ? "#3DCC7A50" : "#2A2A2F"}`,
+                color: i < step ? "#0F0F11" : i === step ? "#3DCC7A" : "#6C6C74",
+                fontFamily: "Space Mono, monospace",
+                fontSize: "0.6rem",
+              }}
+            >
+              {i < step ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5l2.5 2.5L8 2.5" stroke="#0F0F11" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                String(i + 1)
+              )}
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className="h-px w-6 transition-colors duration-300"
+                style={{ backgroundColor: i < step ? "#3DCC7A50" : "#2A2A2F" }}
+              />
+            )}
+          </div>
+        ))}
+        <p
+          className="ml-3 text-xs"
+          style={{ fontFamily: "Space Grotesk, sans-serif", color: "#6C6C74" }}
+        >
+          {STEPS[step]}
+        </p>
+      </div>
+
       <h1
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
-        className="text-4xl text-[#EEEEEF] mb-2"
+        className="text-4xl mb-8"
+        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.03em", color: "#EEEEEF", lineHeight: 1.05 }}
       >
         {STEPS[step]}
       </h1>
-
-      {/* Progress bar */}
-      <div
-        className="h-0.5 w-full rounded-full mb-10 mt-6"
-        style={{ backgroundColor: "#2A2A2F" }}
-      >
-        <div
-          className="h-0.5 rounded-full transition-all duration-500"
-          style={{
-            backgroundColor: "#3DCC7A",
-            width: `${((step + 1) / STEPS.length) * 100}%`,
-          }}
-        />
-      </div>
 
       {/* Step content */}
       {step === 0 && (
@@ -201,29 +220,24 @@ function CalculatorForm() {
 
       {/* Navigation */}
       {step < 3 && (
-        <div className="flex justify-between mt-10">
+        <div className="flex justify-between mt-12">
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-30"
-            style={{
-              color: "#A0A0AB",
-              borderColor: "#2A2A2F",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-20"
+            style={{ color: "#A0A0AB", borderColor: "#2A2A2F", fontFamily: "Space Grotesk, sans-serif" }}
           >
             Back
           </button>
           <button
             onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
-            className="px-6 py-2.5 rounded-xl text-sm font-medium transition-transform duration-150 hover:scale-95 active:scale-90"
-            style={{
-              backgroundColor: "#3DCC7A",
-              color: "#0F0F11",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-transform duration-150 hover:scale-95 active:scale-90"
+            style={{ backgroundColor: "#3DCC7A", color: "#0F0F11", fontFamily: "Space Grotesk, sans-serif" }}
           >
             Continue
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 7h10M8 3l4 4-4 4" stroke="#0F0F11" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         </div>
       )}

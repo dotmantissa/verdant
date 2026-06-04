@@ -3,119 +3,50 @@
 import Link from "next/link";
 
 type LogoProps = {
-  size?: number;
-  showText?: boolean;
   className?: string;
 };
 
-export function Logo({ size = 32, showText = true, className = "" }: LogoProps) {
+export function Logo({ className = "" }: LogoProps) {
   return (
     <Link
       href="/"
-      className={`inline-flex items-center gap-3 group select-none ${className}`}
+      className={`inline-flex items-center gap-2.5 group select-none ${className}`}
       aria-label="Verdant home"
     >
-      <VerdantMark size={size} />
-      {showText && (
-        <span
-          style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
-          className="text-[#EEEEEF] text-lg leading-none group-hover:text-[#3DCC7A] transition-colors duration-200"
-        >
-          Verdant
-        </span>
-      )}
+      <VerdantMark size={26} />
+      <span
+        className="text-base leading-none transition-colors duration-200 group-hover:text-[#3DCC7A]"
+        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em", color: "#EEEEEF" }}
+      >
+        Verdant
+      </span>
     </Link>
   );
 }
 
-export function VerdantMark({ size = 32 }: { size?: number }) {
-  const s = size;
-  const center = s / 2;
-  const r = s * 0.42;
-
+export function VerdantMark({ size = 26 }: { size?: number }) {
   return (
     <svg
-      width={s}
-      height={s}
-      viewBox={`0 0 ${s} ${s}`}
+      width={size}
+      height={size}
+      viewBox="0 0 26 26"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Outer circle — verification ring */}
-      <circle
-        cx={center}
-        cy={center}
-        r={r}
-        stroke="#3DCC7A"
-        strokeWidth={s * 0.055}
-        opacity="0.25"
-      />
-
-      {/* Leaf body — two arcs forming a leaf shape */}
+      {/* Leaf outline */}
       <path
-        d={`
-          M ${center} ${center - r * 0.72}
-          C ${center + r * 0.72} ${center - r * 0.72}
-            ${center + r * 0.72} ${center + r * 0.18}
-            ${center} ${center + r * 0.55}
-          C ${center - r * 0.72} ${center + r * 0.18}
-            ${center - r * 0.72} ${center - r * 0.72}
-            ${center} ${center - r * 0.72}
-          Z
-        `}
-        fill="#3DCC7A"
-        opacity="0.15"
-      />
-      <path
-        d={`
-          M ${center} ${center - r * 0.72}
-          C ${center + r * 0.72} ${center - r * 0.72}
-            ${center + r * 0.72} ${center + r * 0.18}
-            ${center} ${center + r * 0.55}
-          C ${center - r * 0.72} ${center + r * 0.18}
-            ${center - r * 0.72} ${center - r * 0.72}
-            ${center} ${center - r * 0.72}
-          Z
-        `}
+        d="M13 3 C20 3 22 8 22 13 C22 18 17 22 13 22 C9 22 4 18 4 13 C4 8 6 3 13 3 Z"
         stroke="#3DCC7A"
-        strokeWidth={s * 0.05}
+        strokeWidth="1.5"
         fill="none"
+        strokeLinejoin="round"
       />
-
-      {/* Center vein — vertical data line */}
-      <line
-        x1={center}
-        y1={center - r * 0.62}
-        x2={center}
-        y2={center + r * 0.45}
-        stroke="#3DCC7A"
-        strokeWidth={s * 0.04}
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-
-      {/* Small lateral veins */}
-      <line
-        x1={center}
-        y1={center - r * 0.18}
-        x2={center + r * 0.3}
-        y2={center - r * 0.02}
-        stroke="#3DCC7A"
-        strokeWidth={s * 0.03}
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-      <line
-        x1={center}
-        y1={center - r * 0.18}
-        x2={center - r * 0.3}
-        y2={center - r * 0.02}
-        stroke="#3DCC7A"
-        strokeWidth={s * 0.03}
-        strokeLinecap="round"
-        opacity="0.5"
-      />
+      {/* Center vein */}
+      <line x1="13" y1="4" x2="13" y2="21" stroke="#3DCC7A" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+      {/* Two lateral veins */}
+      <path d="M13 11 L17.5 9" stroke="#3DCC7A" strokeWidth="0.9" strokeLinecap="round" opacity="0.5" />
+      <path d="M13 15 L17 13.5" stroke="#3DCC7A" strokeWidth="0.9" strokeLinecap="round" opacity="0.4" />
     </svg>
   );
 }

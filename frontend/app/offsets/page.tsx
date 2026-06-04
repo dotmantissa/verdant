@@ -17,8 +17,6 @@ type ProjectDraft = {
   price_usd_per_tonne: string;
 };
 
-// Seed data — real registered projects for demonstration
-// When the contract is deployed, this is stored on-chain
 const SEED_PROJECTS: ProjectDraft[] = [
   {
     project_id: "VCS-934",
@@ -27,7 +25,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
       "Protecting 785,000 hectares of Zimbabwe forest from illegal logging and agricultural conversion. Certified under Verra VCS.",
     project_url: "https://registry.verra.org/app/projectDetail/VCS/934",
     registry: "verra",
-    country: "ZW",
+    country: "Zimbabwe",
     project_type: "forestry",
     price_usd_per_tonne: "12.50",
   },
@@ -38,7 +36,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
       "Expanding Kenya's Olkaria geothermal plant, reducing dependence on diesel and heavy fuel oil generation in the East African power grid.",
     project_url: "https://registry.goldstandard.org",
     registry: "gold_standard",
-    country: "KE",
+    country: "Kenya",
     project_type: "renewable_energy",
     price_usd_per_tonne: "18.00",
   },
@@ -46,10 +44,10 @@ const SEED_PROJECTS: ProjectDraft[] = [
     project_id: "VCS-1566",
     name: "Mai Ndombe REDD+",
     description:
-      "Protecting 1.5 million hectares of humid tropical forest in the Democratic Republic of Congo, the second-largest tropical forest in the world.",
+      "Protecting 1.5 million hectares of humid tropical forest in the Democratic Republic of Congo.",
     project_url: "https://registry.verra.org",
     registry: "verra",
-    country: "CD",
+    country: "DR Congo",
     project_type: "forestry",
     price_usd_per_tonne: "14.00",
   },
@@ -57,10 +55,10 @@ const SEED_PROJECTS: ProjectDraft[] = [
     project_id: "GS-2185",
     name: "Improved Cookstoves Ethiopia",
     description:
-      "Distributing efficient biomass cookstoves to households in rural Ethiopia, cutting wood fuel consumption and reducing indoor air pollution.",
+      "Distributing efficient biomass cookstoves to households in rural Ethiopia, cutting wood fuel use and indoor air pollution.",
     project_url: "https://registry.goldstandard.org",
     registry: "gold_standard",
-    country: "ET",
+    country: "Ethiopia",
     project_type: "cookstoves",
     price_usd_per_tonne: "8.50",
   },
@@ -68,10 +66,10 @@ const SEED_PROJECTS: ProjectDraft[] = [
     project_id: "VCS-2228",
     name: "Blue Carbon Mangrove Restoration",
     description:
-      "Restoring degraded mangrove ecosystems along the Tanzanian coast. Mangroves store 10x more carbon per hectare than tropical forests.",
+      "Restoring degraded mangrove ecosystems along the Tanzanian coast. Mangroves store roughly 10x more carbon per hectare than tropical forests.",
     project_url: "https://registry.verra.org",
     registry: "verra",
-    country: "TZ",
+    country: "Tanzania",
     project_type: "blue_carbon",
     price_usd_per_tonne: "22.00",
   },
@@ -82,7 +80,7 @@ const SEED_PROJECTS: ProjectDraft[] = [
       "Agricultural biogas digesters in Maharashtra and Uttar Pradesh, converting livestock waste to cooking fuel and replacing wood.",
     project_url: "https://registry.goldstandard.org",
     registry: "gold_standard",
-    country: "IN",
+    country: "India",
     project_type: "methane_capture",
     price_usd_per_tonne: "9.00",
   },
@@ -98,6 +96,16 @@ const TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+const REGISTRY_LABEL: Record<string, string> = {
+  verra: "Verra VCS",
+  gold_standard: "Gold Standard",
+};
+
+const REGISTRY_COLOR: Record<string, string> = {
+  verra: "#3DCC7A",
+  gold_standard: "#F59E0B",
+};
+
 export default function OffsetsPage() {
   return (
     <WalletGate>
@@ -109,17 +117,8 @@ export default function OffsetsPage() {
 function OffsetMarketplace() {
   const { signer } = useWallet();
   const [retiring, setRetiring] = useState<string | null>(null);
-  const [retireResult, setRetireResult] = useState<{
-    pid: string;
-    hash: string;
-    status: string;
-  } | null>(null);
-  const [retireForm, setRetireForm] = useState<{
-    pid: string;
-    tonnes: string;
-    name: string;
-    reason: string;
-  } | null>(null);
+  const [retireResult, setRetireResult] = useState<{ pid: string; hash: string; status: string } | null>(null);
+  const [retireForm, setRetireForm] = useState<{ pid: string; tonnes: string; name: string; reason: string } | null>(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<string>("all");
 
@@ -146,33 +145,41 @@ function OffsetMarketplace() {
   }
 
   const projectTypes = ["all", ...new Set(SEED_PROJECTS.map((p) => p.project_type))];
-  const filtered =
-    filter === "all"
-      ? SEED_PROJECTS
-      : SEED_PROJECTS.filter((p) => p.project_type === filter);
+  const filtered = filter === "all" ? SEED_PROJECTS : SEED_PROJECTS.filter((p) => p.project_type === filter);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
-      {/* Header */}
       <p
-        style={{ fontFamily: "Space Mono, monospace", letterSpacing: "0.2em", color: "#6C6C74" }}
-        className="text-xs uppercase mb-3"
+        className="text-xs uppercase tracking-[0.2em] mb-3"
+        style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}
       >
         Verified projects
       </p>
-      <h1
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
-        className="text-4xl text-[#EEEEEF] mb-4"
-      >
-        Offset marketplace
-      </h1>
-      <p className="text-sm mb-8 max-w-lg" style={{ color: "#A0A0AB" }}>
-        Each project here is checked against its public registry before you can
-        retire against it. Fraudulent or inactive projects are blocked
-        automatically.
-      </p>
+      <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-end mb-12">
+        <div>
+          <h1
+            className="text-4xl mb-4"
+            style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.03em", color: "#EEEEEF" }}
+          >
+            Offset marketplace
+          </h1>
+          <p className="text-sm max-w-lg leading-relaxed" style={{ color: "#A0A0AB", fontFamily: "Space Grotesk, sans-serif" }}>
+            Each project is checked against its public registry before you can
+            retire against it. Fraudulent or inactive projects are blocked automatically.
+          </p>
+        </div>
+        {!contractReady && (
+          <div
+            className="px-4 py-3 rounded-xl border text-xs max-w-sm"
+            style={{ backgroundColor: "#F59E0B08", borderColor: "#F59E0B25", color: "#F59E0B", fontFamily: "Space Grotesk, sans-serif" }}
+          >
+            Contract not configured. Deploy and set{" "}
+            <code className="font-mono">NEXT_PUBLIC_OFFSETS_ADDRESS</code> to enable retirements.
+          </div>
+        )}
+      </div>
 
-      {/* Filter */}
+      {/* Filter pills */}
       <div className="flex flex-wrap gap-2 mb-10">
         {projectTypes.map((t) => (
           <button
@@ -186,61 +193,51 @@ function OffsetMarketplace() {
               fontFamily: "Space Grotesk, sans-serif",
             }}
           >
-            {t === "all" ? "All projects" : TYPE_LABELS[t] ?? t}
+            {t === "all" ? "All" : TYPE_LABELS[t] ?? t}
           </button>
         ))}
       </div>
 
-      {!contractReady && (
-        <div
-          className="p-4 rounded-xl border mb-8 text-sm"
-          style={{ backgroundColor: "#F59E0B10", borderColor: "#F59E0B30", color: "#F59E0B" }}
-        >
-          Offset contract not configured. Set{" "}
-          <code className="font-mono text-xs">NEXT_PUBLIC_OFFSETS_ADDRESS</code> after deploying the contract. Projects are shown for preview.
-        </div>
-      )}
-
       {retireResult && (
         <div
-          className="p-4 rounded-xl border mb-8 text-sm"
-          style={{ backgroundColor: "#1A4D3220", borderColor: "#3DCC7A30", color: "#3DCC7A" }}
+          className="flex items-center justify-between p-4 rounded-xl border mb-8 text-sm"
+          style={{ backgroundColor: "#0D2B1A", borderColor: "#3DCC7A25" }}
         >
-          Retirement submitted. Transaction: {retireResult.hash.slice(0, 20)}...{" "}
-          <span style={{ color: "#6C6C74" }}>({retireResult.status})</span>
-          <button
-            className="ml-4 text-xs underline"
-            style={{ color: "#6C6C74" }}
-            onClick={() => setRetireResult(null)}
-          >
+          <div className="flex items-center gap-3">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8l4 4 6-7" stroke="#3DCC7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{ color: "#3DCC7A", fontFamily: "Space Grotesk, sans-serif" }}>
+              Retirement submitted
+            </span>
+            <span style={{ color: "#6C6C74", fontFamily: "Space Mono, monospace", fontSize: "0.7rem" }}>
+              {retireResult.hash.slice(0, 18)}…
+            </span>
+          </div>
+          <button onClick={() => setRetireResult(null)} className="text-xs" style={{ color: "#6C6C74" }}>
             Dismiss
           </button>
         </div>
       )}
 
-      {error && <p className="text-[#EF4444] text-sm mb-6">{error}</p>}
+      {error && (
+        <p className="text-sm mb-6" style={{ color: "#EF4444", fontFamily: "Space Grotesk, sans-serif" }}>{error}</p>
+      )}
 
-      {/* Project grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((project) => (
           <ProjectCard
             key={project.project_id}
             project={project}
             isRetiring={retiring === project.project_id}
             onRetire={() =>
-              setRetireForm({
-                pid: project.project_id,
-                tonnes: "1.0",
-                name: "",
-                reason: "Personal carbon footprint offset",
-              })
+              setRetireForm({ pid: project.project_id, tonnes: "1.0", name: "", reason: "Personal carbon footprint offset" })
             }
             contractReady={contractReady}
           />
         ))}
       </div>
 
-      {/* Retire modal */}
       {retireForm && (
         <RetireModal
           project={SEED_PROJECTS.find((p) => p.project_id === retireForm.pid)!}
@@ -255,8 +252,6 @@ function OffsetMarketplace() {
   );
 }
 
-// ------------------------------------------------------------------
-
 function ProjectCard({
   project,
   isRetiring,
@@ -268,101 +263,80 @@ function ProjectCard({
   onRetire: () => void;
   contractReady: boolean;
 }) {
-  const registryColors: Record<string, string> = {
-    verra: "#3DCC7A",
-    gold_standard: "#F59E0B",
-    other: "#A0A0AB",
-  };
-  const color = registryColors[project.registry] ?? "#A0A0AB";
+  const regColor = REGISTRY_COLOR[project.registry] ?? "#A0A0AB";
+  const regLabel = REGISTRY_LABEL[project.registry] ?? project.registry;
 
   return (
     <div
-      className="p-5 rounded-2xl border flex flex-col justify-between"
-      style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
+      className="p-5 rounded-2xl border flex flex-col"
+      style={{ backgroundColor: "#111115", borderColor: "#2A2A2F" }}
     >
-      <div>
-        {/* Type + registry */}
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className="px-2 py-0.5 rounded-full text-xs"
-            style={{
-              backgroundColor: `${color}15`,
-              color,
-              border: `1px solid ${color}30`,
-              fontFamily: "Space Mono, monospace",
-              fontSize: "0.65rem",
-              letterSpacing: "0.1em",
-            }}
-          >
-            {TYPE_LABELS[project.project_type] ?? project.project_type}
-          </span>
-          <span className="text-xs" style={{ color: "#6C6C74" }}>
-            {project.country}
-          </span>
-        </div>
-
-        <h3
-          style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, letterSpacing: "-0.01em" }}
-          className="text-base text-[#EEEEEF] mb-2 leading-snug"
-        >
-          {project.name}
-        </h3>
-        <p className="text-xs leading-relaxed mb-4" style={{ color: "#A0A0AB" }}>
-          {project.description}
-        </p>
-
-        <div className="flex items-center gap-2 mb-4">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M2 6l3 3 5-5"
-              stroke={color}
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="text-xs" style={{ color: "#6C6C74" }}>
-            {project.registry === "verra" ? "Verra VCS" : project.registry === "gold_standard" ? "Gold Standard" : project.registry} verified
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-2">
+      {/* Top meta */}
+      <div className="flex items-center justify-between mb-4">
         <span
+          className="text-xs px-2.5 py-1 rounded-full"
           style={{
+            backgroundColor: `${regColor}12`,
+            color: regColor,
+            border: `1px solid ${regColor}25`,
             fontFamily: "Space Mono, monospace",
-            color: "#3DCC7A",
-            fontSize: "0.85rem",
-            fontWeight: 700,
+            fontSize: "0.6rem",
+            letterSpacing: "0.1em",
           }}
         >
-          ${project.price_usd_per_tonne} / tonne
+          {regLabel}
         </span>
+        <span className="text-xs" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+          {project.country}
+        </span>
+      </div>
+
+      {/* Type label */}
+      <p className="text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+        {TYPE_LABELS[project.project_type] ?? project.project_type}
+      </p>
+
+      <h3
+        className="text-lg mb-3 leading-snug"
+        style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, letterSpacing: "-0.02em", color: "#EEEEEF" }}
+      >
+        {project.name}
+      </h3>
+
+      <p className="text-xs leading-relaxed flex-1 mb-5" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+        {project.description}
+      </p>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "#2A2A2F" }}>
+        <div>
+          <p
+            style={{ fontFamily: "Space Mono, monospace", color: "#EEEEEF", fontSize: "0.95rem", fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            ${project.price_usd_per_tonne}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+            per tonne CO₂e
+          </p>
+        </div>
         <button
           onClick={onRetire}
           disabled={isRetiring || !contractReady}
-          className="px-4 py-2 rounded-xl text-xs font-medium transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-40"
+          className="px-4 py-2 rounded-xl text-xs font-medium transition-all duration-150 hover:scale-95 active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "#3DCC7A",
             color: "#0F0F11",
             fontFamily: "Space Grotesk, sans-serif",
           }}
         >
-          {isRetiring ? "Processing..." : "Retire offsets"}
+          {isRetiring ? "Processing..." : "Retire"}
         </button>
       </div>
     </div>
   );
 }
 
-// ------------------------------------------------------------------
-
-type RetireFormState = {
-  pid: string;
-  tonnes: string;
-  name: string;
-  reason: string;
-};
+type RetireFormState = { pid: string; tonnes: string; name: string; reason: string };
 
 function RetireModal({
   project,
@@ -379,41 +353,51 @@ function RetireModal({
   onConfirm: () => void;
   loading: boolean;
 }) {
+  const inputStyle = {
+    backgroundColor: "#0F0F11",
+    color: "#EEEEEF",
+    borderColor: "#2A2A2F",
+    fontFamily: "Space Grotesk, sans-serif",
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ backgroundColor: "#0F0F11CC", backdropFilter: "blur(8px)" }}
+      style={{ backgroundColor: "#0F0F11CC", backdropFilter: "blur(12px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-md rounded-2xl border p-6"
+        className="w-full max-w-md rounded-2xl border p-7"
         style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
       >
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <h3
-              style={{ fontFamily: "Syne, sans-serif", fontWeight: 700 }}
-              className="text-lg text-[#EEEEEF] mb-1"
-            >
-              Retire offsets
-            </h3>
-            <p className="text-xs" style={{ color: "#6C6C74" }}>
-              {project.name}
+            <p className="text-xs mb-1" style={{ color: "#6C6C74", fontFamily: "Space Mono, monospace", letterSpacing: "0.15em" }}>
+              RETIRING OFFSETS
             </p>
+            <h3
+              className="text-xl leading-snug max-w-[280px]"
+              style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, color: "#EEEEEF" }}
+            >
+              {project.name}
+            </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-[#6C6C74] hover:text-[#EEEEEF] transition-colors"
+            className="ml-4 mt-1 shrink-0 transition-colors"
+            style={{ color: "#6C6C74" }}
+            onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.color = "#EEEEEF")}
+            onMouseOut={(e) => ((e.currentTarget as HTMLElement).style.color = "#6C6C74")}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M3 3l12 12M15 3L3 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "#6C6C74" }}>
+            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
               Tonnes CO₂e to retire
             </label>
             <input
@@ -422,17 +406,12 @@ function RetireModal({
               step="0.01"
               value={form.tonnes}
               onChange={(e) => onChange({ ...form, tonnes: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={{
-                backgroundColor: "#222228",
-                color: "#EEEEEF",
-                borderColor: "#2A2A2F",
-                fontFamily: "Space Mono, monospace",
-              }}
+              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
+              style={{ ...inputStyle, fontFamily: "Space Mono, monospace" }}
             />
           </div>
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "#6C6C74" }}>
+            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
               Beneficiary name
             </label>
             <input
@@ -440,17 +419,12 @@ function RetireModal({
               value={form.name}
               onChange={(e) => onChange({ ...form, name: e.target.value })}
               placeholder="Your name or organisation"
-              className="w-full px-4 py-2.5 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={{
-                backgroundColor: "#222228",
-                color: "#EEEEEF",
-                borderColor: "#2A2A2F",
-                fontFamily: "Space Grotesk, sans-serif",
-              }}
+              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
+              style={inputStyle}
             />
           </div>
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "#6C6C74" }}>
+            <label className="block text-xs mb-2" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
               Reason
             </label>
             <input
@@ -458,13 +432,8 @@ function RetireModal({
               value={form.reason}
               onChange={(e) => onChange({ ...form, reason: e.target.value })}
               placeholder="e.g. 2024 personal footprint"
-              className="w-full px-4 py-2.5 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
-              style={{
-                backgroundColor: "#222228",
-                color: "#EEEEEF",
-                borderColor: "#2A2A2F",
-                fontFamily: "Space Grotesk, sans-serif",
-              }}
+              className="w-full px-4 py-3 rounded-xl text-sm border outline-none focus:border-[#3DCC7A] transition-colors"
+              style={inputStyle}
             />
           </div>
         </div>
@@ -472,24 +441,16 @@ function RetireModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-sm border transition-all duration-150 hover:scale-95"
-            style={{
-              color: "#A0A0AB",
-              borderColor: "#2A2A2F",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
+            className="flex-1 py-3 rounded-xl text-sm border transition-all duration-150 hover:scale-95"
+            style={{ color: "#A0A0AB", borderColor: "#2A2A2F", fontFamily: "Space Grotesk, sans-serif" }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading || !form.tonnes || !form.name || !form.reason}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 hover:scale-95 disabled:opacity-40"
-            style={{
-              backgroundColor: "#3DCC7A",
-              color: "#0F0F11",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-150 hover:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "#3DCC7A", color: "#0F0F11", fontFamily: "Space Grotesk, sans-serif" }}
           >
             {loading ? "Submitting..." : "Confirm retirement"}
           </button>

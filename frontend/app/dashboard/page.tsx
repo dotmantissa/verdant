@@ -59,11 +59,11 @@ function Dashboard() {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-16">
-        <div className="h-2 w-48 rounded-full bg-[#2A2A2F] animate-pulse mb-4" />
-        <div className="h-8 w-64 rounded-xl bg-[#2A2A2F] animate-pulse mb-12" />
+        <div className="h-1.5 w-32 rounded-full mb-4 animate-pulse" style={{ backgroundColor: "#2A2A2F" }} />
+        <div className="h-10 w-56 rounded-xl mb-16 animate-pulse" style={{ backgroundColor: "#2A2A2F" }} />
         <div className="grid md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 rounded-2xl bg-[#1A1A1E] animate-pulse" />
+            <div key={i} className="h-36 rounded-2xl animate-pulse" style={{ backgroundColor: "#1A1A1E" }} />
           ))}
         </div>
       </div>
@@ -73,7 +73,7 @@ function Dashboard() {
   if (error) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-16">
-        <p className="text-[#EF4444] text-sm">{error}</p>
+        <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p>
       </div>
     );
   }
@@ -83,16 +83,15 @@ function Dashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
-      {/* Header */}
       <p
-        style={{ fontFamily: "Space Mono, monospace", letterSpacing: "0.2em", color: "#6C6C74" }}
-        className="text-xs uppercase mb-3"
+        className="text-xs uppercase mb-3 tracking-[0.2em]"
+        style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}
       >
         Your record
       </p>
       <h1
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.02em" }}
-        className="text-4xl text-[#EEEEEF] mb-10"
+        className="text-4xl mb-12"
+        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, letterSpacing: "-0.03em", color: "#EEEEEF" }}
       >
         Carbon dashboard
       </h1>
@@ -102,63 +101,96 @@ function Dashboard() {
       ) : (
         <>
           {/* Summary cards */}
-          <div className="grid md:grid-cols-3 gap-4 mb-12">
-            <StatCard
-              label="Latest annual footprint"
-              value={
-                latestTonnes !== null
-                  ? `${latestTonnes.toFixed(2)}t CO₂e`
-                  : "—"
-              }
-              sub={latest?.label ?? ""}
-              highlight={!!latestTonnes}
-            />
-            <StatCard
-              label="Global average"
-              value={ctx ? `${ctx.global_average_t_co2e}t CO₂e` : "—"}
-              sub="Per person, 2022"
-              comparison={
-                latestTonnes && ctx
+          <div className="grid md:grid-cols-3 gap-4 mb-14">
+            <div
+              className="p-6 rounded-2xl border"
+              style={{ backgroundColor: "#0D2B1A", borderColor: "#3DCC7A25" }}
+            >
+              <p className="text-xs mb-3" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+                Your latest annual footprint
+              </p>
+              <p
+                className="mb-1"
+                style={{ fontFamily: "Space Mono, monospace", fontSize: "2.25rem", fontWeight: 700, color: "#3DCC7A", letterSpacing: "-0.04em", lineHeight: 1 }}
+              >
+                {latestTonnes !== null ? `${latestTonnes.toFixed(2)}t` : "—"}
+              </p>
+              <p className="text-xs" style={{ color: "#3DCC7A80", fontFamily: "Space Grotesk, sans-serif" }}>
+                CO₂e · {latest?.label ?? ""}
+              </p>
+            </div>
+
+            <div
+              className="p-6 rounded-2xl border"
+              style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
+            >
+              <p className="text-xs mb-3" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+                Global average
+              </p>
+              <p
+                className="mb-1"
+                style={{ fontFamily: "Space Mono, monospace", fontSize: "2.25rem", fontWeight: 700, color: "#EEEEEF", letterSpacing: "-0.04em", lineHeight: 1 }}
+              >
+                {ctx ? `${ctx.global_average_t_co2e}t` : "—"}
+              </p>
+              <p className="text-xs" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+                {latestTonnes && ctx
                   ? latestTonnes < ctx.global_average_t_co2e
-                    ? `${(((ctx.global_average_t_co2e - latestTonnes) / ctx.global_average_t_co2e) * 100).toFixed(0)}% below average`
-                    : `${(((latestTonnes - ctx.global_average_t_co2e) / ctx.global_average_t_co2e) * 100).toFixed(0)}% above average`
-                  : undefined
-              }
-            />
-            <StatCard
-              label="Paris Agreement target"
-              value={ctx ? `${ctx.paris_target_t_co2e}t CO₂e` : "—"}
-              sub="2°C pathway per person"
-              comparison={
-                latestTonnes && ctx
+                    ? `You are ${(((ctx.global_average_t_co2e - latestTonnes) / ctx.global_average_t_co2e) * 100).toFixed(0)}% below average`
+                    : `You are ${(((latestTonnes - ctx.global_average_t_co2e) / ctx.global_average_t_co2e) * 100).toFixed(0)}% above average`
+                  : "Per person, 2022"}
+              </p>
+            </div>
+
+            <div
+              className="p-6 rounded-2xl border"
+              style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
+            >
+              <p className="text-xs mb-3" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+                Paris target
+              </p>
+              <p
+                className="mb-1"
+                style={{ fontFamily: "Space Mono, monospace", fontSize: "2.25rem", fontWeight: 700, color: "#EEEEEF", letterSpacing: "-0.04em", lineHeight: 1 }}
+              >
+                {ctx ? `${ctx.paris_target_t_co2e}t` : "—"}
+              </p>
+              <p className="text-xs" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+                {latestTonnes && ctx
                   ? latestTonnes > ctx.paris_target_t_co2e
-                    ? `${(latestTonnes - ctx.paris_target_t_co2e).toFixed(1)}t to go`
-                    : "On target"
-                  : undefined
-              }
-            />
+                    ? `${(latestTonnes - ctx.paris_target_t_co2e).toFixed(1)}t above the 2°C pathway`
+                    : "You are on the Paris pathway"
+                  : "2°C pathway per person"}
+              </p>
+            </div>
           </div>
 
           {/* Latest breakdown */}
           {latest && (
-            <div className="mb-12">
-              <SectionLabel>Latest breakdown</SectionLabel>
+            <div className="mb-14">
+              <p className="text-xs uppercase tracking-[0.15em] mb-4" style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}>
+                Latest breakdown
+              </p>
               <BreakdownBar record={latest} />
             </div>
           )}
 
-          {/* Year-over-year history */}
+          {/* Year chart */}
           {history.length > 1 && (
-            <div className="mb-12">
-              <SectionLabel>Year over year</SectionLabel>
+            <div className="mb-14">
+              <p className="text-xs uppercase tracking-[0.15em] mb-4" style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}>
+                Year over year
+              </p>
               <YearChart history={history} />
             </div>
           )}
 
-          {/* All records */}
+          {/* Records list */}
           <div>
-            <SectionLabel>All records ({history.length})</SectionLabel>
-            <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.15em] mb-4" style={{ fontFamily: "Space Mono, monospace", color: "#6C6C74" }}>
+              All records ({history.length})
+            </p>
+            <div className="space-y-2">
               {[...history].reverse().map((rec, i) => (
                 <RecordRow key={i} record={rec} />
               ))}
@@ -170,88 +202,34 @@ function Dashboard() {
   );
 }
 
-// ------------------------------------------------------------------
-
 function EmptyState() {
   return (
-    <div className="text-center py-20">
-      <div
-        className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center border"
-        style={{ borderColor: "#3DCC7A30", backgroundColor: "#3DCC7A10" }}
+    <div className="py-24 max-w-sm">
+      <p
+        className="text-5xl mb-6 leading-none"
+        style={{ fontFamily: "Space Mono, monospace", color: "#2A2A2F", letterSpacing: "-0.04em" }}
       >
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <circle cx="14" cy="14" r="8" stroke="#3DCC7A" strokeWidth="2" />
-          <path d="M14 10v4l3 3" stroke="#3DCC7A" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </div>
+        0.00t
+      </p>
       <h3
-        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800 }}
-        className="text-2xl text-[#EEEEEF] mb-3"
+        className="text-2xl mb-3"
+        style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, color: "#EEEEEF" }}
       >
         No records yet
       </h3>
-      <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: "#A0A0AB" }}>
+      <p className="text-sm leading-relaxed mb-8" style={{ color: "#A0A0AB", fontFamily: "Space Grotesk, sans-serif" }}>
         Calculate your footprint once and it will appear here, permanently, linked to your wallet.
       </p>
       <Link
         href="/calculate"
-        className="inline-flex items-center px-6 py-3 rounded-xl font-medium text-[#0F0F11] transition-transform duration-150 hover:scale-95"
-        style={{ backgroundColor: "#3DCC7A" }}
+        className="inline-flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-[#0F0F11] transition-transform duration-150 hover:scale-95"
+        style={{ backgroundColor: "#3DCC7A", fontFamily: "Space Grotesk, sans-serif" }}
       >
         Calculate now
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7h10M8 3l4 4-4 4" stroke="#0F0F11" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </Link>
-    </div>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      style={{ fontFamily: "Space Mono, monospace", letterSpacing: "0.15em", color: "#6C6C74" }}
-      className="text-xs uppercase mb-4"
-    >
-      {children}
-    </p>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  highlight,
-  comparison,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  highlight?: boolean;
-  comparison?: string;
-}) {
-  return (
-    <div
-      className="p-5 rounded-2xl border"
-      style={{
-        backgroundColor: highlight ? "#1A4D3220" : "#1A1A1E",
-        borderColor: highlight ? "#3DCC7A30" : "#2A2A2F",
-      }}
-    >
-      <p className="text-xs mb-2" style={{ color: "#6C6C74" }}>{label}</p>
-      <p
-        style={{
-          fontFamily: "Space Mono, monospace",
-          fontSize: "1.4rem",
-          fontWeight: 700,
-          color: highlight ? "#3DCC7A" : "#EEEEEF",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        {value}
-      </p>
-      <p className="text-xs mt-1" style={{ color: "#6C6C74" }}>{sub}</p>
-      {comparison && (
-        <p className="text-xs mt-2" style={{ color: "#8ED4A8" }}>{comparison}</p>
-      )}
     </div>
   );
 }
@@ -261,37 +239,33 @@ function BreakdownBar({ record }: { record: FootprintRecord }) {
   const segments = [
     { label: "Energy", value: record.breakdown.energy_kg_co2e, color: "#3DCC7A" },
     { label: "Transport", value: record.breakdown.transport_kg_co2e, color: "#8ED4A8" },
-    { label: "Diet", value: record.breakdown.diet_kg_co2e, color: "#1A4D32" },
+    { label: "Diet", value: record.breakdown.diet_kg_co2e, color: "#2A5C3A" },
   ];
 
   return (
-    <div
-      className="p-6 rounded-2xl border"
-      style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
-    >
-      {/* Stacked bar */}
-      <div className="flex rounded-full overflow-hidden h-3 mb-4">
+    <div className="p-6 rounded-2xl border" style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}>
+      <div className="flex rounded-full overflow-hidden h-2 mb-6">
         {segments.map(({ label, value, color }) => (
           <div
             key={label}
-            style={{
-              width: `${total > 0 ? (value / total) * 100 : 0}%`,
-              backgroundColor: color,
-            }}
             title={`${label}: ${(value / 1000).toFixed(2)}t`}
+            style={{ width: `${total > 0 ? (value / total) * 100 : 0}%`, backgroundColor: color }}
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-5">
+      <div className="grid grid-cols-3 gap-4">
         {segments.map(({ label, value, color }) => (
-          <div key={label} className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            <span className="text-xs" style={{ color: "#6C6C74" }}>{label}</span>
-            <span
-              style={{ fontFamily: "Space Mono, monospace", color: "#EEEEEF", fontSize: "0.7rem" }}
-            >
+          <div key={label}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-xs" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>{label}</span>
+            </div>
+            <p style={{ fontFamily: "Space Mono, monospace", color: "#EEEEEF", fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.03em" }}>
               {(value / 1000).toFixed(2)}t
-            </span>
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>
+              {total > 0 ? `${((value / total) * 100).toFixed(0)}%` : "—"}
+            </p>
           </div>
         ))}
       </div>
@@ -303,29 +277,35 @@ function YearChart({ history }: { history: FootprintRecord[] }) {
   const max = Math.max(...history.map((r) => r.total_kg_co2e));
 
   return (
-    <div
-      className="p-6 rounded-2xl border"
-      style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
-    >
-      <div className="flex items-end gap-3 h-24">
-        {history.map((rec) => (
-          <div key={`${rec.year}-${rec.label}`} className="flex flex-col items-center gap-1 flex-1">
-            <div
-              className="w-full rounded-t-sm"
-              style={{
-                height: `${max > 0 ? (rec.total_kg_co2e / max) * 80 : 4}px`,
-                backgroundColor: "#3DCC7A",
-                minHeight: "4px",
-              }}
-              title={`${rec.label}: ${(rec.total_kg_co2e / 1000).toFixed(2)}t CO₂e`}
-            />
-            <span
-              style={{ fontFamily: "Space Mono, monospace", fontSize: "0.6rem", color: "#6C6C74" }}
-            >
-              {rec.year}
-            </span>
-          </div>
-        ))}
+    <div className="p-6 rounded-2xl border" style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}>
+      <div className="flex items-end gap-4 h-28">
+        {history.map((rec) => {
+          const pct = max > 0 ? (rec.total_kg_co2e / max) * 100 : 0;
+          return (
+            <div key={`${rec.year}-${rec.label}`} className="flex flex-col items-center gap-2 flex-1">
+              <span
+                className="text-xs opacity-0 group-hover:opacity-100"
+                style={{ fontFamily: "Space Mono, monospace", color: "#3DCC7A", fontSize: "0.6rem" }}
+              >
+                {(rec.total_kg_co2e / 1000).toFixed(1)}t
+              </span>
+              <div className="w-full relative group">
+                <div
+                  className="w-full rounded-t transition-all duration-300"
+                  style={{ height: `${Math.max(pct * 0.85, 4)}px`, backgroundColor: "#3DCC7A30", minHeight: "4px" }}
+                />
+                <div
+                  className="absolute bottom-0 left-0 w-full rounded-t"
+                  style={{ height: `${Math.max(pct * 0.85, 4)}px`, backgroundColor: "#3DCC7A", opacity: 0.8, minHeight: "4px" }}
+                  title={`${rec.year}: ${(rec.total_kg_co2e / 1000).toFixed(2)}t CO₂e`}
+                />
+              </div>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: "0.65rem", color: "#6C6C74" }}>
+                {rec.year}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -335,74 +315,49 @@ function RecordRow({ record }: { record: FootprintRecord }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div
-      className="rounded-xl border overflow-hidden"
-      style={{ backgroundColor: "#1A1A1E", borderColor: "#2A2A2F" }}
-    >
+    <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "#111115", borderColor: "#2A2A2F" }}>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[#222228] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors duration-150"
+        style={{ backgroundColor: expanded ? "#1A1A1E" : "transparent" }}
+        onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#1A1A1E")}
+        onMouseOut={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = expanded ? "#1A1A1E" : "transparent")}
       >
-        <div className="flex items-center gap-4">
-          <span
-            style={{ fontFamily: "Space Mono, monospace", color: "#3DCC7A", fontSize: "0.75rem" }}
-          >
+        <div className="flex items-center gap-5">
+          <span style={{ fontFamily: "Space Mono, monospace", color: "#3DCC7A", fontSize: "0.75rem" }}>
             {record.year}
           </span>
-          <span className="text-sm" style={{ color: "#EEEEEF" }}>
+          <span className="text-sm" style={{ color: "#A0A0AB", fontFamily: "Space Grotesk, sans-serif" }}>
             {record.label || "Annual record"}
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <span
-            style={{
-              fontFamily: "Space Mono, monospace",
-              color: "#EEEEEF",
-              fontSize: "0.8rem",
-            }}
-          >
+          <span style={{ fontFamily: "Space Mono, monospace", color: "#EEEEEF", fontSize: "0.8rem", letterSpacing: "-0.02em" }}>
             {(record.total_kg_co2e / 1000).toFixed(2)}t CO₂e
           </span>
           <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            style={{
-              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.2s",
-            }}
+            width="14" height="14" viewBox="0 0 14 14" fill="none"
+            style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
           >
-            <path d="M4 6l4 4 4-4" stroke="#6C6C74" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M3 5l4 4 4-4" stroke="#6C6C74" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </div>
       </button>
       {expanded && (
-        <div
-          className="px-5 pb-5 pt-0 text-xs space-y-1.5"
-          style={{ borderTop: "1px solid #2A2A2F" }}
-        >
-          <div className="flex justify-between pt-4">
-            <span style={{ color: "#6C6C74" }}>Energy</span>
-            <span style={{ color: "#EEEEEF", fontFamily: "Space Mono, monospace" }}>
-              {(record.breakdown.energy_kg_co2e / 1000).toFixed(3)}t
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: "#6C6C74" }}>Transport</span>
-            <span style={{ color: "#EEEEEF", fontFamily: "Space Mono, monospace" }}>
-              {(record.breakdown.transport_kg_co2e / 1000).toFixed(3)}t
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: "#6C6C74" }}>Diet</span>
-            <span style={{ color: "#EEEEEF", fontFamily: "Space Mono, monospace" }}>
-              {(record.breakdown.diet_kg_co2e / 1000).toFixed(3)}t
-            </span>
-          </div>
-          <div className="flex justify-between pt-1" style={{ borderTop: "1px solid #2A2A2F" }}>
-            <span style={{ color: "#6C6C74" }}>Sources</span>
-            <span style={{ color: "#3DCC7A", fontFamily: "Space Mono, monospace" }}>
+        <div className="px-5 pt-4 pb-5 space-y-2 text-xs" style={{ borderTop: "1px solid #2A2A2F" }}>
+          {[
+            ["Energy", (record.breakdown.energy_kg_co2e / 1000).toFixed(3) + "t"],
+            ["Transport", (record.breakdown.transport_kg_co2e / 1000).toFixed(3) + "t"],
+            ["Diet", (record.breakdown.diet_kg_co2e / 1000).toFixed(3) + "t"],
+          ].map(([label, value]) => (
+            <div key={label} className="flex justify-between">
+              <span style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>{label}</span>
+              <span style={{ color: "#EEEEEF", fontFamily: "Space Mono, monospace" }}>{value}</span>
+            </div>
+          ))}
+          <div className="flex justify-between pt-2" style={{ borderTop: "1px solid #2A2A2F" }}>
+            <span style={{ color: "#6C6C74", fontFamily: "Space Grotesk, sans-serif" }}>Sources</span>
+            <span style={{ color: "#3DCC7A", fontFamily: "Space Mono, monospace", fontSize: "0.65rem" }}>
               {Object.values(record.data_sources).join(", ")}
             </span>
           </div>
