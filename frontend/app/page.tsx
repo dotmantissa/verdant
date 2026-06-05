@@ -3,50 +3,50 @@
 import Link from "next/link";
 
 const STATS = [
-  { val: "4.7 t", label: "Global average CO₂e / person / year" },
-  { val: "2.3 t", label: "Paris 2°C target per person" },
-  { val: "IEA", label: "Electricity intensity data source" },
-  { val: "DEFRA 2024", label: "Transport emission factors" },
-  { val: "On-chain", label: "Where your record lives" },
+  { val: "4.7 t",      label: "Global average per person per year" },
+  { val: "2.3 t",      label: "Paris 2°C budget per person"        },
+  { val: "IEA",        label: "Electricity data source"            },
+  { val: "DEFRA 2024", label: "Transport emission factors"         },
+  { val: "On-chain",   label: "Where your record lives"            },
 ];
 
 const STEPS = [
   {
     n: "01",
-    title: "Submit your data",
-    body: "Energy bills, travel records, dietary patterns. You enter the numbers — no estimates, no defaults.",
+    title: "You enter your numbers",
+    body: "Energy bills, flights, diet. No estimates, no prefilled defaults. Your data.",
   },
   {
     n: "02",
-    title: "Real-time verification",
-    body: "Emission factors are fetched live from IEA, DEFRA, and Our World in Data at calculation time.",
+    title: "Factors are fetched live",
+    body: "Emission factors come from IEA, DEFRA, and Our World in Data at calculation time. Not a static table from 2021.",
   },
   {
     n: "03",
-    title: "Consensus on-chain",
-    body: "Multiple GenLayer validators independently re-run the calculation. All must agree within 5% before anything is written.",
+    title: "Validators reach consensus",
+    body: "Multiple GenLayer validators each run the calculation independently. All must agree within 5% before anything is written.",
   },
   {
     n: "04",
-    title: "Permanent record",
-    body: "The result is stored against your wallet address. Unchangeable. Comparable year over year.",
+    title: "Your record is permanent",
+    body: "The result goes on-chain, tied to your wallet. Nobody can change it. You can compare it year over year.",
   },
 ];
 
 const SOURCES = [
-  ["IEA / Our World in Data", "Electricity intensity by country"],
-  ["DEFRA 2024", "Transport conversion factors"],
-  ["Poore & Nemecek 2018", "Food system emissions"],
-  ["Verra VCS", "Offset project status"],
-  ["Gold Standard", "Offset project status"],
+  ["IEA / Our World in Data", "Electricity grid intensity by country"],
+  ["DEFRA 2024",              "Transport conversion factors"          ],
+  ["Poore & Nemecek 2018",    "Food system emissions"                 ],
+  ["Verra VCS",               "Offset project registry"               ],
+  ["Gold Standard",           "Offset project registry"               ],
 ];
 
 export default function HomePage() {
   return (
     <div className="page">
 
-      {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 80 }}>
+      {/* Hero */}
+      <section style={{ marginBottom: 72 }}>
         <p
           className="anim-fade-up"
           style={{
@@ -55,34 +55,25 @@ export default function HomePage() {
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             color: "var(--forest)",
-            marginBottom: 20,
+            marginBottom: 18,
           }}
         >
-          Personal carbon footprint — on-chain
+          Personal carbon footprint on-chain
         </p>
 
         <h1
           className="anim-fade-up delay-1"
           style={{
-            fontSize: "clamp(2.4rem, 6vw, 4rem)",
+            fontSize: "clamp(2rem, 6vw, 3.8rem)",
             fontWeight: 600,
             letterSpacing: "-0.03em",
             lineHeight: 1.1,
             color: "var(--ink)",
-            maxWidth: 680,
-            marginBottom: 24,
+            maxWidth: 660,
+            marginBottom: 22,
           }}
         >
-          Your footprint,{" "}
-          <span
-            style={{
-              color: "var(--forest)",
-              position: "relative",
-              display: "inline-block",
-            }}
-          >
-            actually verified.
-          </span>
+          Your footprint, <span style={{ color: "var(--forest)" }}>actually verified.</span>
         </h1>
 
         <p
@@ -90,33 +81,33 @@ export default function HomePage() {
           style={{
             fontSize: 16,
             color: "var(--ink-60)",
-            maxWidth: 560,
+            maxWidth: 520,
             lineHeight: 1.75,
-            marginBottom: 40,
+            marginBottom: 36,
           }}
         >
-          Verdant calculates your carbon footprint from energy, transport, and diet
-          data — cross-referenced against IEA, DEFRA, and Our World in Data in real
-          time. The result is recorded on-chain, against your wallet, permanently.
+          You submit your energy, transport, and diet figures. Verdant cross-checks them
+          against live data sources, reaches consensus across multiple validators, then writes
+          the result to your wallet address permanently.
         </p>
 
-        <div className="anim-fade-up delay-3" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link href="/calculate" className="btn btn-primary" style={{ fontSize: 14, padding: "12px 24px" }}>
-            Calculate footprint →
+        <div className="anim-fade-up delay-3" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href="/calculate" className="btn btn-primary" style={{ fontSize: 14, padding: "12px 22px" }}>
+            Calculate your footprint
           </Link>
-          <Link href="/offsets" className="btn btn-outline" style={{ fontSize: 14, padding: "12px 24px" }}>
-            View verified offsets
+          <Link href="/offsets" className="btn btn-outline" style={{ fontSize: 14, padding: "12px 22px" }}>
+            Browse offset projects
           </Link>
         </div>
       </section>
 
-      {/* ── Stats strip ──────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 80 }}>
+      {/* Stats strip */}
+      <section style={{ marginBottom: 72 }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
-            gap: 12,
+            gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+            gap: 10,
           }}
         >
           {STATS.map(({ val, label }, i) => (
@@ -124,25 +115,24 @@ export default function HomePage() {
               key={label}
               className={`anim-fade-up delay-${i + 1}`}
               style={{
-                background: "white",
-                border: "1.5px solid rgba(35,31,32,0.06)",
+                background: "var(--surface)",
+                border: "1.5px solid var(--border)",
                 borderRadius: 12,
-                padding: "20px 18px",
-                transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                padding: "18px 16px",
               }}
             >
               <div
                 style={{
-                  fontSize: 22,
-                  fontWeight: 600,
+                  fontSize: 20,
+                  fontWeight: 700,
                   letterSpacing: "-0.02em",
                   color: "var(--forest)",
-                  marginBottom: 6,
+                  marginBottom: 5,
                 }}
               >
                 {val}
               </div>
-              <div style={{ fontSize: 12, color: "var(--ink-30)", lineHeight: 1.45 }}>{label}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-30)", lineHeight: 1.4 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -150,45 +140,37 @@ export default function HomePage() {
 
       <hr className="divider" />
 
-      {/* ── How it works + Offset verification ───────────────────────── */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 64,
-          marginBottom: 80,
-          alignItems: "start",
-        }}
-      >
+      {/* How it works + data sources */}
+      <section className="grid-2" style={{ marginBottom: 72, alignItems: "start" }}>
         <div>
           <p className="section-label">How it works</p>
-          <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 0 }}>
+          <ol style={{ listStyle: "none", display: "flex", flexDirection: "column" }}>
             {STEPS.map(({ n, title, body }, i) => (
               <li
                 key={n}
                 className={`anim-fade-up delay-${i + 1}`}
                 style={{
                   display: "flex",
-                  gap: 18,
+                  gap: 16,
                   padding: "18px 0",
-                  borderBottom: i < STEPS.length - 1 ? "1px solid rgba(35,31,32,0.06)" : "none",
+                  borderBottom: i < STEPS.length - 1 ? "1px solid var(--border)" : "none",
                 }}
               >
                 <span
+                  className="mono"
                   style={{
-                    fontSize: 11,
-                    fontWeight: 700,
                     color: "var(--sage)",
                     flexShrink: 0,
-                    paddingTop: 3,
-                    letterSpacing: "0.05em",
-                    fontFamily: "'DM Mono', monospace",
+                    paddingTop: 2,
+                    fontWeight: 700,
                   }}
                 >
                   {n}
                 </span>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 5 }}>{title}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 5 }}>
+                    {title}
+                  </p>
                   <p style={{ fontSize: 13, color: "var(--ink-60)", lineHeight: 1.65 }}>{body}</p>
                 </div>
               </li>
@@ -197,7 +179,7 @@ export default function HomePage() {
         </div>
 
         <div>
-          <p className="section-label" style={{ marginBottom: 20 }}>Offset verification</p>
+          <p className="section-label" style={{ marginBottom: 16 }}>Offset verification</p>
           <p
             style={{
               fontSize: 13,
@@ -206,10 +188,10 @@ export default function HomePage() {
               marginBottom: 32,
             }}
           >
-            Each offset project is checked against its Verra VCS or Gold Standard
-            public listing before it can be retired against. The contract fetches
-            live monitoring data and runs an LLM assessment. Fraudulent or inactive
-            projects are rejected automatically.
+            Every offset project in the registry is checked against its Verra VCS or Gold
+            Standard listing before you can retire against it. The contract fetches live
+            monitoring data and runs an assessment. If a project has lapsed or cannot be
+            verified, the retirement is rejected outright.
           </p>
 
           <p className="section-label">Data sources</p>
@@ -219,15 +201,15 @@ export default function HomePage() {
                 <tr
                   key={src}
                   className={`anim-fade-up delay-${i + 1}`}
-                  style={{ borderBottom: "1px solid rgba(35,31,32,0.06)" }}
+                  style={{ borderBottom: "1px solid var(--border)" }}
                 >
                   <td
                     style={{
                       padding: "11px 0",
                       fontSize: 13,
-                      fontWeight: 500,
+                      fontWeight: 600,
                       color: "var(--ink)",
-                      paddingRight: 24,
+                      paddingRight: 20,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -241,11 +223,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────── */}
+      {/* Footer */}
       <footer
         style={{
-          borderTop: "1.5px solid rgba(35,31,32,0.06)",
-          paddingTop: 32,
+          borderTop: "1.5px solid var(--border)",
+          paddingTop: 28,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -254,26 +236,19 @@ export default function HomePage() {
         }}
       >
         <span style={{ fontSize: 12, color: "var(--ink-30)" }}>
-          Footprint records stored on GenLayer. No account required.
+          Records stored on GenLayer. No account needed.
         </span>
         <a
           href="https://github.com/dotmantissa/verdant"
-          style={{ fontSize: 12, color: "var(--ink-30)", textDecoration: "none", transition: "color 0.2s" }}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 12, color: "var(--ink-30)", textDecoration: "none", transition: "color 0.18s" }}
           onMouseOver={e => (e.currentTarget.style.color = "var(--forest)")}
           onMouseOut={e => (e.currentTarget.style.color = "var(--ink-30)")}
         >
           github.com/dotmantissa/verdant
         </a>
       </footer>
-
-      <style>{`
-        @media (max-width: 680px) {
-          section[style*="gridTemplateColumns: 1fr 1fr"] {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

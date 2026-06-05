@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { submitFootprint } from "@/lib/genlayer";
@@ -15,29 +15,36 @@ const COUNTRIES = [
 ];
 
 const HEATING_TYPES = [
-  ["gas", "Natural gas"], ["oil", "Heating oil"], ["electric", "Electric"],
-  ["heat_pump", "Heat pump"], ["district", "District heating"], ["wood", "Wood / biomass"],
+  ["gas",      "Natural gas"      ],
+  ["oil",      "Heating oil"      ],
+  ["electric", "Electric"         ],
+  ["heat_pump","Heat pump"        ],
+  ["district", "District heating" ],
+  ["wood",     "Wood / biomass"   ],
 ];
 
 const CAR_TYPES = [
-  ["petrol", "Petrol"], ["diesel", "Diesel"], ["ev", "Electric"], ["average", "Unknown"],
+  ["petrol",  "Petrol"  ],
+  ["diesel",  "Diesel"  ],
+  ["ev",      "Electric"],
+  ["average", "Unknown" ],
 ];
 
 const DIET_TYPES = [
-  ["vegan", "Vegan", "No animal products"],
-  ["vegetarian", "Vegetarian", "No meat"],
-  ["pescatarian", "Pescatarian", "Fish, no meat"],
-  ["low_meat", "Low meat", "Once or twice a week"],
-  ["medium_meat", "Medium meat", "Most days"],
-  ["high_meat", "High meat", "Most meals"],
+  ["vegan",       "Vegan",       "No animal products"     ],
+  ["vegetarian",  "Vegetarian",  "No meat"                ],
+  ["pescatarian", "Pescatarian", "Fish but no meat"       ],
+  ["low_meat",    "Low meat",    "Once or twice a week"   ],
+  ["medium_meat", "Medium meat", "Most days"              ],
+  ["high_meat",   "High meat",   "Most meals"             ],
 ];
 
 type Step = "energy" | "transport" | "diet" | "review";
 const STEPS: { id: Step; label: string }[] = [
-  { id: "energy", label: "Energy" },
+  { id: "energy",    label: "Energy"    },
   { id: "transport", label: "Transport" },
-  { id: "diet", label: "Diet" },
-  { id: "review", label: "Review" },
+  { id: "diet",      label: "Diet"      },
+  { id: "review",    label: "Review"    },
 ];
 
 export default function CalculatePage() {
@@ -50,11 +57,11 @@ export default function CalculatePage() {
 
 function Calculator() {
   const { signer } = useWallet();
-  const [step, setStep] = useState(0);
+  const [step, setStep]           = useState(0);
+  const [animKey, setAnimKey]     = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
-  const [animKey, setAnimKey] = useState(0);
-  const [country, setCountry] = useState("GB");
-  const [year] = useState(new Date().getFullYear());
+  const [country, setCountry]     = useState("GB");
+  const [year]                    = useState(new Date().getFullYear());
 
   const [energy, setEnergy] = useState({
     electricity_kwh: "", heating_type: "gas", heating_kwh: "",
@@ -68,8 +75,8 @@ function Calculator() {
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ hash: string; status: string } | null>(null);
-  const [txError, setTxError] = useState("");
+  const [result, setResult]         = useState<{ hash: string; status: string } | null>(null);
+  const [txError, setTxError]       = useState("");
 
   const contractReady = !!FOOTPRINT_CONTRACT_ADDRESS;
 
@@ -87,23 +94,23 @@ function Calculator() {
       const tx = await submitFootprint(signer, {
         energyData: JSON.stringify({
           electricity_kwh: parseFloat(energy.electricity_kwh) || 0,
-          heating_type: energy.heating_type,
-          heating_kwh: parseFloat(energy.heating_kwh) || 0,
+          heating_type:    energy.heating_type,
+          heating_kwh:     parseFloat(energy.heating_kwh) || 0,
         }),
         transportData: JSON.stringify({
-          car_km: parseFloat(transport.car_km) || 0,
-          car_type: transport.car_type,
-          domestic_flight_km: parseFloat(transport.domestic_flight_km) || 0,
+          car_km:               parseFloat(transport.car_km) || 0,
+          car_type:             transport.car_type,
+          domestic_flight_km:   parseFloat(transport.domestic_flight_km) || 0,
           short_haul_flight_km: parseFloat(transport.short_haul_flight_km) || 0,
-          long_haul_flight_km: parseFloat(transport.long_haul_flight_km) || 0,
-          rail_km: parseFloat(transport.rail_km) || 0,
-          bus_km: parseFloat(transport.bus_km) || 0,
+          long_haul_flight_km:  parseFloat(transport.long_haul_flight_km) || 0,
+          rail_km:              parseFloat(transport.rail_km) || 0,
+          bus_km:               parseFloat(transport.bus_km) || 0,
         }),
         dietData: JSON.stringify({
-          diet_type: diet.diet_type,
-          beef_kg_week: diet.beef_kg_week !== "" ? parseFloat(diet.beef_kg_week) : undefined,
+          diet_type:         diet.diet_type,
+          beef_kg_week:      diet.beef_kg_week      !== "" ? parseFloat(diet.beef_kg_week)      : undefined,
           dairy_litres_week: diet.dairy_litres_week !== "" ? parseFloat(diet.dairy_litres_week) : undefined,
-          fish_kg_week: diet.fish_kg_week !== "" ? parseFloat(diet.fish_kg_week) : undefined,
+          fish_kg_week:      diet.fish_kg_week      !== "" ? parseFloat(diet.fish_kg_week)      : undefined,
         }),
         countryCode: country,
         year,
@@ -117,77 +124,77 @@ function Calculator() {
     }
   }
 
+  /* Success / error screen */
   if (result) {
+    const ok = result.status === "finalized";
+    const failed = result.status === "failed";
     return (
       <div className="page-narrow">
         <div
           className="anim-scale-in"
           style={{
-            background: "white",
-            border: "1.5px solid rgba(35,31,32,0.07)",
-            borderRadius: 16,
-            padding: "40px 36px",
+            background: "var(--surface)",
+            border: "1.5px solid var(--border)",
+            borderRadius: 18,
+            padding: "40px 24px",
             textAlign: "center",
           }}
         >
           <div
             style={{
-              width: 56,
-              height: 56,
+              width: 52,
+              height: 52,
               borderRadius: "50%",
-              background: result.status === "failed"
-                ? "rgba(192,57,43,0.1)"
-                : "rgba(83,116,95,0.1)",
+              background: failed ? "var(--red-bg)" : "var(--sage-15)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 24px",
-              fontSize: 24,
+              margin: "0 auto 22px",
+              fontSize: 22,
             }}
           >
-            {result.status === "failed" ? "✕" : result.status === "finalized" ? "✓" : "⏳"}
+            {failed ? "✕" : ok ? "✓" : "⏳"}
           </div>
           <h2
             style={{
               fontSize: 20,
               fontWeight: 600,
               letterSpacing: "-0.02em",
-              marginBottom: 10,
               color: "var(--ink)",
+              marginBottom: 10,
             }}
           >
-            {result.status === "finalized"
-              ? "Recorded on-chain"
-              : result.status === "failed"
-              ? "Transaction failed"
-              : "Awaiting consensus"}
+            {ok ? "Recorded on-chain" : failed ? "Transaction failed" : "Reaching consensus"}
           </h2>
-          <p style={{ fontSize: 14, color: "var(--ink-60)", lineHeight: 1.65, marginBottom: 24 }}>
-            {result.status === "finalized"
-              ? "Your footprint has been calculated and recorded permanently on-chain."
-              : result.status === "failed"
+          <p style={{ fontSize: 14, color: "var(--ink-60)", lineHeight: 1.65, marginBottom: 22 }}>
+            {ok
+              ? "Your footprint is calculated and written permanently to the chain."
+              : failed
               ? "The transaction was rejected. Check your wallet and try again."
-              : "GenLayer validators are reaching consensus. This usually takes under a minute."}
+              : "GenLayer validators are agreeing on the result. Usually takes under a minute."}
           </p>
           <div
             className="mono"
             style={{
-              background: "rgba(83,116,95,0.08)",
-              border: "1px solid rgba(83,116,95,0.2)",
+              background: "var(--sage-15)",
+              border: "1px solid var(--sage-30)",
               borderRadius: 8,
-              padding: "12px 16px",
+              padding: "11px 14px",
               color: "var(--forest)",
               wordBreak: "break-all",
               textAlign: "left",
-              marginBottom: 32,
+              marginBottom: 28,
               fontSize: 11,
             }}
           >
             {result.hash}
           </div>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <a href="/dashboard" className="btn btn-primary">View dashboard →</a>
-            <button onClick={() => { setResult(null); setStep(0); setAnimKey(k => k + 1); }} className="btn btn-ghost">
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/dashboard" className="btn btn-primary">View dashboard</a>
+            <button
+              onClick={() => { setResult(null); setStep(0); setAnimKey(k => k + 1); }}
+              className="btn btn-ghost"
+            >
               Calculate again
             </button>
           </div>
@@ -200,12 +207,15 @@ function Calculator() {
     <div className="page-narrow">
       <h1
         className="anim-fade-up"
-        style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8, color: "var(--ink)" }}
+        style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 6, color: "var(--ink)" }}
       >
-        Calculate footprint
+        Calculate your footprint
       </h1>
-      <p className="anim-fade-up delay-1" style={{ fontSize: 14, color: "var(--ink-60)", marginBottom: 40 }}>
-        Enter your annual data for {year}. All fields are optional — leave blank to use zero.
+      <p
+        className="anim-fade-up delay-1"
+        style={{ fontSize: 14, color: "var(--ink-60)", marginBottom: 36 }}
+      >
+        Enter what you know for {year}. Anything you leave blank counts as zero.
       </p>
 
       {/* Step track */}
@@ -218,30 +228,24 @@ function Calculator() {
               onClick={() => i < step && goTo(i)}
             >
               <div className="step-num">{i < step ? "✓" : i + 1}</div>
-              <span style={{ fontSize: 12 }}>{label}</span>
+              <span className="step-text">{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div key={`connector-${i}`} className={`step-connector${i < step ? " done" : ""}`} />
+              <div key={`c-${i}`} className={`step-connector${i < step ? " done" : ""}`} />
             )}
           </>
         ))}
       </div>
 
-      {/* Step content with animation */}
+      {/* Animated step */}
       <div
         key={animKey}
         className={direction === "forward" ? "anim-fade-up" : "anim-fade-in"}
-        style={{ animationDuration: "0.3s" }}
+        style={{ animationDuration: "0.28s" }}
       >
-        {step === 0 && (
-          <EnergyStep energy={energy} setEnergy={setEnergy} country={country} setCountry={setCountry} />
-        )}
-        {step === 1 && (
-          <TransportStep transport={transport} setTransport={setTransport} />
-        )}
-        {step === 2 && (
-          <DietStep diet={diet} setDiet={setDiet} />
-        )}
+        {step === 0 && <EnergyStep    energy={energy}       setEnergy={setEnergy}       country={country} setCountry={setCountry} />}
+        {step === 1 && <TransportStep transport={transport} setTransport={setTransport} />}
+        {step === 2 && <DietStep      diet={diet}           setDiet={setDiet} />}
         {step === 3 && (
           <ReviewStep
             energy={energy} transport={transport} diet={diet}
@@ -252,18 +256,17 @@ function Calculator() {
         )}
       </div>
 
-      {/* Navigation */}
       {step < 3 && (
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 40 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 36 }}>
           <button
             onClick={() => goTo(step - 1)}
             disabled={step === 0}
             className="btn btn-ghost"
           >
-            ← Back
+            Back
           </button>
           <button onClick={() => goTo(step + 1)} className="btn btn-primary">
-            Continue →
+            Continue
           </button>
         </div>
       )}
@@ -271,7 +274,6 @@ function Calculator() {
   );
 }
 
-/* ── Field wrapper ────────────────────────────────────────────────────── */
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="field-wrap">
@@ -282,7 +284,22 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-/* ── Steps ────────────────────────────────────────────────────────────── */
+function StepHeading({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 28 }}>
+      <span style={{ fontSize: 24, lineHeight: 1.3, flexShrink: 0 }}>{icon}</span>
+      <div>
+        <h2 style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 4 }}>
+          {title}
+        </h2>
+        <p style={{ fontSize: 13, color: "var(--ink-60)" }}>{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Steps ──────────────────────────────────────────────────────────── */
+
 function EnergyStep({
   energy, setEnergy, country, setCountry,
 }: {
@@ -293,27 +310,25 @@ function EnergyStep({
 }) {
   return (
     <div>
-      <StepHeading icon="⚡" title="Energy" subtitle="Your home electricity and heating usage for the year." />
-      <Field label="Country" hint="Determines electricity grid emission intensity.">
+      <StepHeading icon="⚡" title="Energy" sub="Your home electricity and heating for the year." />
+      <Field label="Country" hint="Sets the emission intensity for your electricity grid.">
         <select className="field-input" value={country} onChange={e => setCountry(e.target.value)}>
-          {COUNTRIES.map(([code, name]) => (
-            <option key={code} value={code}>{name}</option>
-          ))}
+          {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
         </select>
       </Field>
-      <Field label="Annual electricity use (kWh)" hint="Check your bills or smart meter. UK average ~3,100 kWh.">
+      <Field label="Annual electricity (kWh)" hint="Check your bills or smart meter. UK average is around 3,100 kWh.">
         <input className="field-input" type="number" min="0" placeholder="3100"
           value={energy.electricity_kwh}
           onChange={e => setEnergy({ ...energy, electricity_kwh: e.target.value })} />
       </Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+      <div className="grid-2" style={{ gap: "0 16px" }}>
         <Field label="Heating fuel">
           <select className="field-input" value={energy.heating_type}
             onChange={e => setEnergy({ ...energy, heating_type: e.target.value })}>
             {HEATING_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
-        <Field label="Annual heating (kWh)" hint="UK avg ~12,000 kWh.">
+        <Field label="Annual heating (kWh)" hint="UK average is about 12,000 kWh.">
           <input className="field-input" type="number" min="0" placeholder="12000"
             value={energy.heating_kwh}
             onChange={e => setEnergy({ ...energy, heating_kwh: e.target.value })} />
@@ -335,8 +350,8 @@ function TransportStep({
 }) {
   return (
     <div>
-      <StepHeading icon="✈️" title="Transport" subtitle="Enter distances for the full year. Add both legs of return journeys." />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+      <StepHeading icon="✈️" title="Transport" sub="Full-year distances. Count both legs on return trips." />
+      <div className="grid-2" style={{ gap: "0 16px" }}>
         <Field label="Car distance (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.car_km}
@@ -349,22 +364,22 @@ function TransportStep({
           </select>
         </Field>
       </div>
-      <Field label="Domestic flights (km)" hint="Under ~3 hours.">
+      <Field label="Domestic flights (km)" hint="Generally under 3 hours.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.domestic_flight_km}
           onChange={e => setTransport({ ...transport, domestic_flight_km: e.target.value })} />
       </Field>
-      <Field label="Short-haul flights (km)" hint="3–6 hours, e.g. London–Barcelona ~2,300 km return.">
+      <Field label="Short-haul flights (km)" hint="3 to 6 hours. London to Barcelona return is about 2,300 km.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.short_haul_flight_km}
           onChange={e => setTransport({ ...transport, short_haul_flight_km: e.target.value })} />
       </Field>
-      <Field label="Long-haul flights (km)" hint="Over 6 hours, e.g. London–New York ~11,000 km return.">
+      <Field label="Long-haul flights (km)" hint="Over 6 hours. London to New York return is about 11,000 km.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.long_haul_flight_km}
           onChange={e => setTransport({ ...transport, long_haul_flight_km: e.target.value })} />
       </Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+      <div className="grid-2" style={{ gap: "0 16px" }}>
         <Field label="Rail (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.rail_km}
@@ -388,8 +403,8 @@ function DietStep({
 }) {
   return (
     <div>
-      <StepHeading icon="🥗" title="Diet" subtitle="Select the pattern that best describes your eating habits." />
-      <Field label="Diet pattern">
+      <StepHeading icon="🥗" title="Diet" sub="Pick the pattern that fits you best." />
+      <Field label="Your diet">
         <div
           style={{
             display: "grid",
@@ -406,12 +421,12 @@ function DietStep({
                   display: "flex",
                   flexDirection: "column",
                   gap: 2,
-                  padding: "14px 16px",
+                  padding: "13px 14px",
                   borderRadius: 10,
                   cursor: "pointer",
-                  border: active ? "1.5px solid var(--forest)" : "1.5px solid rgba(35,31,32,0.08)",
-                  background: active ? "rgba(83,116,95,0.07)" : "white",
-                  transition: "all 0.2s ease",
+                  border: `1.5px solid ${active ? "var(--forest)" : "var(--border-strong)"}`,
+                  background: active ? "var(--sage-15)" : "var(--surface)",
+                  transition: "border-color 0.18s, background 0.18s",
                 }}
               >
                 <input
@@ -434,28 +449,28 @@ function DietStep({
 
       <p
         style={{
-          fontSize: 12,
-          color: "var(--ink-30)",
-          fontWeight: 500,
-          letterSpacing: "0.05em",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.07em",
           textTransform: "uppercase",
-          margin: "24px 0 12px",
+          color: "var(--ink-30)",
+          margin: "20px 0 12px",
         }}
       >
-        Optional — override with weekly quantities
+        Override with weekly quantities (optional)
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
-        <Field label="Beef (kg/week)">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+        <Field label="Beef (kg/wk)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.beef_kg_week}
             onChange={e => setDiet({ ...diet, beef_kg_week: e.target.value })} />
         </Field>
-        <Field label="Dairy (L/week)">
+        <Field label="Dairy (L/wk)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="3.5"
             value={diet.dairy_litres_week}
             onChange={e => setDiet({ ...diet, dairy_litres_week: e.target.value })} />
         </Field>
-        <Field label="Fish (kg/week)">
+        <Field label="Fish (kg/wk)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.fish_kg_week}
             onChange={e => setDiet({ ...diet, fish_kg_week: e.target.value })} />
@@ -479,28 +494,32 @@ function ReviewStep({
   contractReady: boolean; submitting: boolean; error: string; onSubmit: () => void;
 }) {
   const rows = [
-    ["Country", country.toUpperCase()],
-    ["Year", String(year)],
+    ["Country",     country.toUpperCase()],
+    ["Year",        String(year)],
     ["Electricity", `${energy.electricity_kwh || 0} kWh`],
-    ["Heating", `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
-    ["Car", `${transport.car_km || 0} km (${transport.car_type})`],
-    ["Flights", `${transport.domestic_flight_km || 0} + ${transport.short_haul_flight_km || 0} + ${transport.long_haul_flight_km || 0} km`],
-    ["Rail", `${transport.rail_km || 0} km`],
-    ["Bus", `${transport.bus_km || 0} km`],
-    ["Diet", diet.diet_type.replace(/_/g, " ")],
+    ["Heating",     `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
+    ["Car",         `${transport.car_km || 0} km (${transport.car_type})`],
+    ["Flights",     `${transport.domestic_flight_km || 0} + ${transport.short_haul_flight_km || 0} + ${transport.long_haul_flight_km || 0} km`],
+    ["Rail",        `${transport.rail_km || 0} km`],
+    ["Bus",         `${transport.bus_km || 0} km`],
+    ["Diet",        diet.diet_type.replace(/_/g, " ")],
   ];
 
   return (
     <div>
-      <StepHeading icon="📋" title="Review" subtitle="Once submitted, this record is permanent on-chain, tied to your wallet." />
+      <StepHeading
+        icon="📋"
+        title="Review"
+        sub="Once you submit, this record is permanent. It goes on-chain tied to your wallet and cannot be altered."
+      />
 
       <div
         style={{
-          background: "white",
-          border: "1.5px solid rgba(35,31,32,0.07)",
+          background: "var(--surface)",
+          border: "1.5px solid var(--border)",
           borderRadius: 12,
           overflow: "hidden",
-          marginBottom: 28,
+          marginBottom: 24,
         }}
       >
         {rows.map(([label, value], i) => (
@@ -510,52 +529,35 @@ function ReviewStep({
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "12px 18px",
-              borderBottom: i < rows.length - 1 ? "1px solid rgba(35,31,32,0.05)" : "none",
-              background: i % 2 === 0 ? "transparent" : "rgba(35,31,32,0.015)",
+              padding: "11px 16px",
+              borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none",
+              background: i % 2 === 0 ? "transparent" : "var(--surface-2)",
+              gap: 12,
             }}
           >
-            <span style={{ fontSize: 13, color: "var(--ink-60)" }}>{label}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{value}</span>
+            <span style={{ fontSize: 13, color: "var(--ink-60)", flexShrink: 0 }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", textAlign: "right" }}>{value}</span>
           </div>
         ))}
       </div>
 
       {!contractReady && (
-        <div className="banner info" style={{ marginBottom: 20 }}>
-          Contract address not set. Deploy and configure{" "}
-          <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11 }}>NEXT_PUBLIC_FOOTPRINT_ADDRESS</code>.
+        <div className="banner info">
+          Contract not configured. Deploy and set{" "}
+          <code className="mono">NEXT_PUBLIC_FOOTPRINT_ADDRESS</code>.
         </div>
       )}
 
-      {error && (
-        <div className="banner error">{error}</div>
-      )}
+      {error && <div className="banner error">{error}</div>}
 
       <button
         onClick={onSubmit}
         disabled={!contractReady || submitting}
         className="btn btn-primary"
-        style={{ width: "100%", justifyContent: "center", padding: "13px", fontSize: 14 }}
+        style={{ width: "100%", padding: "13px", fontSize: 14 }}
       >
-        {submitting ? (
-          <><span className="spinner" /> Submitting…</>
-        ) : (
-          "Record on-chain →"
-        )}
+        {submitting ? <><span className="spinner" />Submitting</> : "Record on-chain"}
       </button>
-    </div>
-  );
-}
-
-function StepHeading({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
-  return (
-    <div style={{ marginBottom: 32 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-        <span style={{ fontSize: 22 }}>{icon}</span>
-        <h2 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)" }}>{title}</h2>
-      </div>
-      <p style={{ fontSize: 13, color: "var(--ink-60)", marginLeft: 34 }}>{subtitle}</p>
     </div>
   );
 }

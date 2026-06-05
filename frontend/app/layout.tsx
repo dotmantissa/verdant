@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { WalletProvider } from "@/components/WalletProvider";
 
 export const metadata: Metadata = {
   title: "Verdant",
-  description: "Personal carbon footprint, actually verified. On-chain.",
+  description: "Track and verify your personal carbon footprint on-chain.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,8 +20,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <Nav />
-        <main>{children}</main>
+        <WalletProvider>
+          <Nav />
+          <main>{children}</main>
+        </WalletProvider>
       </body>
     </html>
   );
