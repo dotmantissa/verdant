@@ -13,113 +13,129 @@ export function Nav() {
   const { address, isConnected, wrongNetwork, error, connect, disconnect } = useWallet();
 
   const links = [
-    { href: "/calculate", label: "calculate" },
-    { href: "/offsets", label: "offsets" },
-    { href: "/dashboard", label: "dashboard" },
+    { href: "/calculate", label: "Calculate" },
+    { href: "/offsets", label: "Offsets" },
+    { href: "/dashboard", label: "Dashboard" },
   ];
 
   return (
-    <header style={{ borderBottom: "1px solid #1a1a1a" }}>
-      <div
+    <>
+      <header
         style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "0 24px",
-          height: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 32,
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          background: "rgba(254,248,245,0.85)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          borderBottom: "1.5px solid rgba(35,31,32,0.06)",
         }}
       >
-        {/* Wordmark */}
-        <Link
-          href="/"
+        <div
           style={{
-            fontWeight: 600,
-            fontSize: 13,
-            letterSpacing: "0.12em",
-            color: "#3dcc7a",
-            textDecoration: "none",
-            textTransform: "uppercase",
+            maxWidth: 1000,
+            margin: "0 auto",
+            padding: "0 28px",
+            height: 60,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 32,
           }}
         >
-          Verdant
-        </Link>
+          {/* Wordmark */}
+          <Link href="/" className="nav-wordmark">
+            Verdant
+          </Link>
 
-        {/* Links */}
-        <nav style={{ display: "flex", gap: 28, flex: 1 }}>
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              style={{
-                fontSize: 12,
-                letterSpacing: "0.06em",
-                textDecoration: "none",
-                color: pathname === href ? "#e8e8e8" : "#555",
-                borderBottom: pathname === href ? "1px solid #3dcc7a" : "1px solid transparent",
-                paddingBottom: 1,
-              }}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+          {/* Nav links */}
+          <nav style={{ display: "flex", gap: 4, flex: 1 }}>
+            {links.map(({ href, label }) => {
+              const active = pathname === href;
+              return (
+                <Link key={href} href={href} className={`nav-link${active ? " active" : ""}`}>
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Wallet */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-          {wrongNetwork && (
-            <span style={{ fontSize: 11, color: "#f87171", letterSpacing: "0.05em" }}>
-              wrong network
-            </span>
-          )}
-          {isConnected && address ? (
-            <>
-              <span style={{ fontSize: 11, color: "#3dcc7a", letterSpacing: "0.05em" }}>
-                {truncate(address)}
-              </span>
-              <button onClick={disconnect} className="btn-ghost">
-                disconnect
+          {/* Wallet */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            {wrongNetwork && (
+              <span className="nav-badge error">Wrong network</span>
+            )}
+            {isConnected && address ? (
+              <>
+                <span className="nav-address mono">{truncate(address)}</span>
+                <button onClick={disconnect} className="btn btn-ghost" style={{ padding: "6px 14px", fontSize: 12 }}>
+                  Disconnect
+                </button>
+              </>
+            ) : (
+              <button onClick={connect} className="btn btn-primary" style={{ padding: "7px 16px", fontSize: 13 }}>
+                Connect wallet
               </button>
-            </>
-          ) : (
-            <button onClick={connect} className="btn-accent">
-              connect wallet
-            </button>
-          )}
-          {error && (
-            <span style={{ fontSize: 10, color: "#f87171", maxWidth: 180 }}>{error}</span>
-          )}
+            )}
+            {error && !wrongNetwork && (
+              <span className="nav-badge error" style={{ maxWidth: 160 }}>{error}</span>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
 
       <style>{`
-        .btn-ghost {
-          background: none;
-          border: 1px solid #2a2a2a;
-          color: #555;
-          font-family: inherit;
-          font-size: 11px;
-          letter-spacing: 0.06em;
-          padding: 4px 10px;
-          cursor: pointer;
-          transition: border-color 0.15s, color 0.15s;
+        .nav-wordmark {
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          color: var(--forest);
+          text-decoration: none;
+          transition: color 0.2s ease;
+          flex-shrink: 0;
         }
-        .btn-ghost:hover { border-color: #444; color: #888; }
-        .btn-accent {
-          background: none;
-          border: 1px solid #3dcc7a;
-          color: #3dcc7a;
-          font-family: inherit;
-          font-size: 11px;
-          letter-spacing: 0.06em;
-          padding: 4px 12px;
-          cursor: pointer;
-          transition: background 0.15s, color 0.15s;
+        .nav-wordmark:hover { color: var(--sage); }
+
+        .nav-link {
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.01em;
+          text-decoration: none;
+          color: var(--ink-60);
+          padding: 5px 12px;
+          border-radius: 7px;
+          position: relative;
+          transition: color 0.2s ease, background 0.2s ease;
         }
-        .btn-accent:hover { background: #3dcc7a; color: #0a0a0a; }
+        .nav-link:hover {
+          color: var(--ink);
+          background: var(--ink-06);
+        }
+        .nav-link.active {
+          color: var(--forest);
+          background: rgba(83,116,95,0.1);
+          font-weight: 600;
+        }
+
+        .nav-address {
+          font-size: 12px;
+          color: var(--forest);
+          background: rgba(83,116,95,0.1);
+          padding: 5px 10px;
+          border-radius: 7px;
+        }
+
+        .nav-badge {
+          font-size: 11px;
+          font-weight: 500;
+          padding: 4px 9px;
+          border-radius: 100px;
+        }
+        .nav-badge.error {
+          background: rgba(192,57,43,0.08);
+          color: var(--red);
+        }
       `}</style>
-    </header>
+    </>
   );
 }

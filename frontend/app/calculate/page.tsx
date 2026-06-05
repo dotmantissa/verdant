@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { submitFootprint } from "@/lib/genlayer";
@@ -24,16 +24,21 @@ const CAR_TYPES = [
 ];
 
 const DIET_TYPES = [
-  ["vegan", "Vegan — no animal products"],
-  ["vegetarian", "Vegetarian — no meat"],
-  ["pescatarian", "Pescatarian — fish, no meat"],
-  ["low_meat", "Low meat — once or twice a week"],
-  ["medium_meat", "Medium meat — most days"],
-  ["high_meat", "High meat — most meals"],
+  ["vegan", "Vegan", "No animal products"],
+  ["vegetarian", "Vegetarian", "No meat"],
+  ["pescatarian", "Pescatarian", "Fish, no meat"],
+  ["low_meat", "Low meat", "Once or twice a week"],
+  ["medium_meat", "Medium meat", "Most days"],
+  ["high_meat", "High meat", "Most meals"],
 ];
 
 type Step = "energy" | "transport" | "diet" | "review";
-const STEPS: Step[] = ["energy", "transport", "diet", "review"];
+const STEPS: { id: Step; label: string }[] = [
+  { id: "energy", label: "Energy" },
+  { id: "transport", label: "Transport" },
+  { id: "diet", label: "Diet" },
+  { id: "review", label: "Review" },
+];
 
 export default function CalculatePage() {
   return (
@@ -45,7 +50,9 @@ export default function CalculatePage() {
 
 function Calculator() {
   const { signer } = useWallet();
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [animKey, setAnimKey] = useState(0);
   const [country, setCountry] = useState("GB");
   const [year] = useState(new Date().getFullYear());
 
@@ -65,6 +72,12 @@ function Calculator() {
   const [txError, setTxError] = useState("");
 
   const contractReady = !!FOOTPRINT_CONTRACT_ADDRESS;
+
+  function goTo(i: number) {
+    setDirection(i > step ? "forward" : "back");
+    setStep(i);
+    setAnimKey(k => k + 1);
+  }
 
   async function handleSubmit() {
     if (!signer) return;
@@ -106,130 +119,170 @@ function Calculator() {
 
   if (result) {
     return (
-      <Page>
-        <Label>Transaction submitted</Label>
-        <p style={{ fontSize: 12, color: "#555", marginBottom: 24 }}>
-          {result.status === "finalized"
-            ? "Your footprint has been calculated and recorded on-chain."
-            : result.status === "failed"
-            ? "The transaction was rejected. Check your wallet and try again."
-            : "GenLayer validators are reaching consensus. This usually takes under a minute."}
-        </p>
-        <pre style={{ fontSize: 11, color: "#3dcc7a", wordBreak: "break-all", whiteSpace: "pre-wrap", marginBottom: 32 }}>
-          {result.hash}
-        </pre>
-        <div style={{ display: "flex", gap: 12 }}>
-          <a href="/dashboard" className="form-btn-primary">view dashboard</a>
-          <button onClick={() => { setResult(null); setStep(0); }} className="form-btn-ghost">
-            calculate again
-          </button>
+      <div className="page-narrow">
+        <div
+          className="anim-scale-in"
+          style={{
+            background: "white",
+            border: "1.5px solid rgba(35,31,32,0.07)",
+            borderRadius: 16,
+            padding: "40px 36px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: result.status === "failed"
+                ? "rgba(192,57,43,0.1)"
+                : "rgba(83,116,95,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 24px",
+              fontSize: 24,
+            }}
+          >
+            {result.status === "failed" ? "✕" : result.status === "finalized" ? "✓" : "⏳"}
+          </div>
+          <h2
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              marginBottom: 10,
+              color: "var(--ink)",
+            }}
+          >
+            {result.status === "finalized"
+              ? "Recorded on-chain"
+              : result.status === "failed"
+              ? "Transaction failed"
+              : "Awaiting consensus"}
+          </h2>
+          <p style={{ fontSize: 14, color: "var(--ink-60)", lineHeight: 1.65, marginBottom: 24 }}>
+            {result.status === "finalized"
+              ? "Your footprint has been calculated and recorded permanently on-chain."
+              : result.status === "failed"
+              ? "The transaction was rejected. Check your wallet and try again."
+              : "GenLayer validators are reaching consensus. This usually takes under a minute."}
+          </p>
+          <div
+            className="mono"
+            style={{
+              background: "rgba(83,116,95,0.08)",
+              border: "1px solid rgba(83,116,95,0.2)",
+              borderRadius: 8,
+              padding: "12px 16px",
+              color: "var(--forest)",
+              wordBreak: "break-all",
+              textAlign: "left",
+              marginBottom: 32,
+              fontSize: 11,
+            }}
+          >
+            {result.hash}
+          </div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <a href="/dashboard" className="btn btn-primary">View dashboard →</a>
+            <button onClick={() => { setResult(null); setStep(0); setAnimKey(k => k + 1); }} className="btn btn-ghost">
+              Calculate again
+            </button>
+          </div>
         </div>
-        <FormStyles />
-      </Page>
+      </div>
     );
   }
 
   return (
-    <Page>
-      {/* Step indicator */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 40, borderBottom: "1px solid #1a1a1a" }}>
-        {STEPS.map((s, i) => (
-          <div
-            key={s}
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              padding: "8px 0",
-              marginRight: 24,
-              color: i === step ? "#e8e8e8" : i < step ? "#3dcc7a" : "#333",
-              borderBottom: i === step ? "1px solid #3dcc7a" : "1px solid transparent",
-              marginBottom: -1,
-              cursor: i < step ? "pointer" : "default",
-            }}
-            onClick={() => i < step && setStep(i)}
-          >
-            {s}
-          </div>
+    <div className="page-narrow">
+      <h1
+        className="anim-fade-up"
+        style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8, color: "var(--ink)" }}
+      >
+        Calculate footprint
+      </h1>
+      <p className="anim-fade-up delay-1" style={{ fontSize: 14, color: "var(--ink-60)", marginBottom: 40 }}>
+        Enter your annual data for {year}. All fields are optional — leave blank to use zero.
+      </p>
+
+      {/* Step track */}
+      <div className="step-track anim-fade-up delay-2">
+        {STEPS.map(({ id, label }, i) => (
+          <>
+            <div
+              key={id}
+              className={`step-item${i === step ? " active" : i < step ? " done" : ""}`}
+              onClick={() => i < step && goTo(i)}
+            >
+              <div className="step-num">{i < step ? "✓" : i + 1}</div>
+              <span style={{ fontSize: 12 }}>{label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div key={`connector-${i}`} className={`step-connector${i < step ? " done" : ""}`} />
+            )}
+          </>
         ))}
       </div>
 
-      {step === 0 && (
-        <EnergyStep
-          energy={energy} setEnergy={setEnergy}
-          country={country} setCountry={setCountry}
-        />
-      )}
-      {step === 1 && (
-        <TransportStep transport={transport} setTransport={setTransport} />
-      )}
-      {step === 2 && (
-        <DietStep diet={diet} setDiet={setDiet} />
-      )}
-      {step === 3 && (
-        <ReviewStep
-          energy={energy} transport={transport} diet={diet}
-          country={country} year={year}
-          contractReady={contractReady} submitting={submitting}
-          error={txError} onSubmit={handleSubmit}
-        />
-      )}
+      {/* Step content with animation */}
+      <div
+        key={animKey}
+        className={direction === "forward" ? "anim-fade-up" : "anim-fade-in"}
+        style={{ animationDuration: "0.3s" }}
+      >
+        {step === 0 && (
+          <EnergyStep energy={energy} setEnergy={setEnergy} country={country} setCountry={setCountry} />
+        )}
+        {step === 1 && (
+          <TransportStep transport={transport} setTransport={setTransport} />
+        )}
+        {step === 2 && (
+          <DietStep diet={diet} setDiet={setDiet} />
+        )}
+        {step === 3 && (
+          <ReviewStep
+            energy={energy} transport={transport} diet={diet}
+            country={country} year={year}
+            contractReady={contractReady} submitting={submitting}
+            error={txError} onSubmit={handleSubmit}
+          />
+        )}
+      </div>
 
+      {/* Navigation */}
       {step < 3 && (
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 40 }}>
           <button
-            onClick={() => setStep(s => Math.max(0, s - 1))}
+            onClick={() => goTo(step - 1)}
             disabled={step === 0}
-            className="form-btn-ghost"
-            style={{ opacity: step === 0 ? 0.2 : 1 }}
+            className="btn btn-ghost"
           >
-            ← back
+            ← Back
           </button>
-          <button
-            onClick={() => setStep(s => Math.min(3, s + 1))}
-            className="form-btn-primary"
-          >
-            continue →
+          <button onClick={() => goTo(step + 1)} className="btn btn-primary">
+            Continue →
           </button>
         </div>
       )}
-
-      <FormStyles />
-    </Page>
-  );
-}
-
-// ── Layout wrappers ────────────────────────────────────────────────────
-
-function Page({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: "52px 24px 80px" }}>
-      {children}
     </div>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 20 }}>
-      {children}
-    </p>
-  );
-}
-
+/* ── Field wrapper ────────────────────────────────────────────────────── */
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 24 }}>
-      <label style={{ display: "block", fontSize: 11, color: "#555", marginBottom: hint ? 4 : 8, letterSpacing: "0.05em" }}>
-        {label}
-      </label>
-      {hint && <p style={{ fontSize: 11, color: "#333", marginBottom: 8, lineHeight: 1.5 }}>{hint}</p>}
+    <div className="field-wrap">
+      <label className="field-label">{label}</label>
+      {hint && <p className="field-hint">{hint}</p>}
       {children}
     </div>
   );
 }
 
-// ── Steps ──────────────────────────────────────────────────────────────
-
+/* ── Steps ────────────────────────────────────────────────────────────── */
 function EnergyStep({
   energy, setEnergy, country, setCountry,
 }: {
@@ -239,32 +292,34 @@ function EnergyStep({
   setCountry: (v: string) => void;
 }) {
   return (
-    <>
-      <Label>Energy</Label>
-      <Field label="country" hint="Determines electricity grid emission intensity.">
+    <div>
+      <StepHeading icon="⚡" title="Energy" subtitle="Your home electricity and heating usage for the year." />
+      <Field label="Country" hint="Determines electricity grid emission intensity.">
         <select className="field-input" value={country} onChange={e => setCountry(e.target.value)}>
           {COUNTRIES.map(([code, name]) => (
             <option key={code} value={code}>{name}</option>
           ))}
         </select>
       </Field>
-      <Field label="annual electricity use (kWh)" hint="Check your bills or smart meter. UK average ~3,100 kWh.">
+      <Field label="Annual electricity use (kWh)" hint="Check your bills or smart meter. UK average ~3,100 kWh.">
         <input className="field-input" type="number" min="0" placeholder="3100"
           value={energy.electricity_kwh}
           onChange={e => setEnergy({ ...energy, electricity_kwh: e.target.value })} />
       </Field>
-      <Field label="heating fuel">
-        <select className="field-input" value={energy.heating_type}
-          onChange={e => setEnergy({ ...energy, heating_type: e.target.value })}>
-          {HEATING_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-      </Field>
-      <Field label="annual heating energy (kWh)" hint="For gas, multiply therms by 29.3. UK average ~12,000 kWh.">
-        <input className="field-input" type="number" min="0" placeholder="12000"
-          value={energy.heating_kwh}
-          onChange={e => setEnergy({ ...energy, heating_kwh: e.target.value })} />
-      </Field>
-    </>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+        <Field label="Heating fuel">
+          <select className="field-input" value={energy.heating_type}
+            onChange={e => setEnergy({ ...energy, heating_type: e.target.value })}>
+            {HEATING_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </Field>
+        <Field label="Annual heating (kWh)" hint="UK avg ~12,000 kWh.">
+          <input className="field-input" type="number" min="0" placeholder="12000"
+            value={energy.heating_kwh}
+            onChange={e => setEnergy({ ...energy, heating_kwh: e.target.value })} />
+        </Field>
+      </div>
+    </div>
   );
 }
 
@@ -279,52 +334,49 @@ function TransportStep({
   setTransport: (v: typeof transport) => void;
 }) {
   return (
-    <>
-      <Label>Transport</Label>
-      <p style={{ fontSize: 12, color: "#444", marginBottom: 28, lineHeight: 1.6 }}>
-        Enter distances for the year. Add both legs of return journeys.
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
-        <Field label="car distance (km)">
+    <div>
+      <StepHeading icon="✈️" title="Transport" subtitle="Enter distances for the full year. Add both legs of return journeys." />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+        <Field label="Car distance (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.car_km}
             onChange={e => setTransport({ ...transport, car_km: e.target.value })} />
         </Field>
-        <Field label="car fuel">
+        <Field label="Car fuel type">
           <select className="field-input" value={transport.car_type}
             onChange={e => setTransport({ ...transport, car_type: e.target.value })}>
             {CAR_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </Field>
       </div>
-      <Field label="domestic flights (km)" hint="Under ~3 hours.">
+      <Field label="Domestic flights (km)" hint="Under ~3 hours.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.domestic_flight_km}
           onChange={e => setTransport({ ...transport, domestic_flight_km: e.target.value })} />
       </Field>
-      <Field label="short-haul flights (km)" hint="3–6 hours, e.g. London–Barcelona ~2,300 km return.">
+      <Field label="Short-haul flights (km)" hint="3–6 hours, e.g. London–Barcelona ~2,300 km return.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.short_haul_flight_km}
           onChange={e => setTransport({ ...transport, short_haul_flight_km: e.target.value })} />
       </Field>
-      <Field label="long-haul flights (km)" hint="Over 6 hours, e.g. London–New York ~11,000 km return.">
+      <Field label="Long-haul flights (km)" hint="Over 6 hours, e.g. London–New York ~11,000 km return.">
         <input className="field-input" type="number" min="0" placeholder="0"
           value={transport.long_haul_flight_km}
           onChange={e => setTransport({ ...transport, long_haul_flight_km: e.target.value })} />
       </Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
-        <Field label="rail (km)">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+        <Field label="Rail (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.rail_km}
             onChange={e => setTransport({ ...transport, rail_km: e.target.value })} />
         </Field>
-        <Field label="bus (km)">
+        <Field label="Bus (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
             value={transport.bus_km}
             onChange={e => setTransport({ ...transport, bus_km: e.target.value })} />
         </Field>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -335,59 +387,81 @@ function DietStep({
   setDiet: (v: typeof diet) => void;
 }) {
   return (
-    <>
-      <Label>Diet</Label>
-      <Field label="diet pattern">
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {DIET_TYPES.map(([value, label]) => (
-            <label
-              key={value}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "9px 12px",
-                cursor: "pointer",
-                fontSize: 12,
-                color: diet.diet_type === value ? "#e8e8e8" : "#555",
-                background: diet.diet_type === value ? "#111" : "transparent",
-                borderLeft: diet.diet_type === value ? "2px solid #3dcc7a" : "2px solid transparent",
-              }}
-            >
-              <input
-                type="radio"
-                name="diet_type"
-                value={value}
-                checked={diet.diet_type === value}
-                onChange={() => setDiet({ ...diet, diet_type: value })}
-                style={{ accentColor: "#3dcc7a" }}
-              />
-              {label}
-            </label>
-          ))}
+    <div>
+      <StepHeading icon="🥗" title="Diet" subtitle="Select the pattern that best describes your eating habits." />
+      <Field label="Diet pattern">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+          }}
+        >
+          {DIET_TYPES.map(([value, label, sub]) => {
+            const active = diet.diet_type === value;
+            return (
+              <label
+                key={value}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  padding: "14px 16px",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  border: active ? "1.5px solid var(--forest)" : "1.5px solid rgba(35,31,32,0.08)",
+                  background: active ? "rgba(83,116,95,0.07)" : "white",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="diet_type"
+                  value={value}
+                  checked={active}
+                  onChange={() => setDiet({ ...diet, diet_type: value })}
+                  style={{ display: "none" }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 600, color: active ? "var(--forest)" : "var(--ink)" }}>
+                  {label}
+                </span>
+                <span style={{ fontSize: 12, color: "var(--ink-60)" }}>{sub}</span>
+              </label>
+            );
+          })}
         </div>
       </Field>
-      <p style={{ fontSize: 11, color: "#333", marginBottom: 16, marginTop: 8 }}>
-        Optional — override with actual weekly quantities:
+
+      <p
+        style={{
+          fontSize: 12,
+          color: "var(--ink-30)",
+          fontWeight: 500,
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+          margin: "24px 0 12px",
+        }}
+      >
+        Optional — override with weekly quantities
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 16px" }}>
-        <Field label="beef (kg/week)">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 14px" }}>
+        <Field label="Beef (kg/week)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.beef_kg_week}
             onChange={e => setDiet({ ...diet, beef_kg_week: e.target.value })} />
         </Field>
-        <Field label="dairy (L/week)">
+        <Field label="Dairy (L/week)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="3.5"
             value={diet.dairy_litres_week}
             onChange={e => setDiet({ ...diet, dairy_litres_week: e.target.value })} />
         </Field>
-        <Field label="fish (kg/week)">
+        <Field label="Fish (kg/week)">
           <input className="field-input" type="number" min="0" step="0.1" placeholder="0"
             value={diet.fish_kg_week}
             onChange={e => setDiet({ ...diet, fish_kg_week: e.target.value })} />
         </Field>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -405,102 +479,83 @@ function ReviewStep({
   contractReady: boolean; submitting: boolean; error: string; onSubmit: () => void;
 }) {
   const rows = [
-    ["country", country.toUpperCase()],
-    ["year", String(year)],
-    ["electricity", `${energy.electricity_kwh || 0} kWh`],
-    ["heating", `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
-    ["car", `${transport.car_km || 0} km (${transport.car_type})`],
-    ["flights", `${transport.domestic_flight_km || 0} + ${transport.short_haul_flight_km || 0} + ${transport.long_haul_flight_km || 0} km`],
-    ["rail", `${transport.rail_km || 0} km`],
-    ["bus", `${transport.bus_km || 0} km`],
-    ["diet", diet.diet_type.replace("_", " ")],
+    ["Country", country.toUpperCase()],
+    ["Year", String(year)],
+    ["Electricity", `${energy.electricity_kwh || 0} kWh`],
+    ["Heating", `${energy.heating_kwh || 0} kWh (${energy.heating_type})`],
+    ["Car", `${transport.car_km || 0} km (${transport.car_type})`],
+    ["Flights", `${transport.domestic_flight_km || 0} + ${transport.short_haul_flight_km || 0} + ${transport.long_haul_flight_km || 0} km`],
+    ["Rail", `${transport.rail_km || 0} km`],
+    ["Bus", `${transport.bus_km || 0} km`],
+    ["Diet", diet.diet_type.replace(/_/g, " ")],
   ];
 
   return (
-    <>
-      <Label>Review</Label>
-      <p style={{ fontSize: 12, color: "#444", marginBottom: 28, lineHeight: 1.6 }}>
-        Once submitted the record is permanent on-chain, tied to your wallet.
-      </p>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 32 }}>
-        <tbody>
-          {rows.map(([label, value]) => (
-            <tr key={label} style={{ borderBottom: "1px solid #111" }}>
-              <td style={{ padding: "8px 0", color: "#444", paddingRight: 32 }}>{label}</td>
-              <td style={{ padding: "8px 0", color: "#e8e8e8" }}>{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <StepHeading icon="📋" title="Review" subtitle="Once submitted, this record is permanent on-chain, tied to your wallet." />
+
+      <div
+        style={{
+          background: "white",
+          border: "1.5px solid rgba(35,31,32,0.07)",
+          borderRadius: 12,
+          overflow: "hidden",
+          marginBottom: 28,
+        }}
+      >
+        {rows.map(([label, value], i) => (
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 18px",
+              borderBottom: i < rows.length - 1 ? "1px solid rgba(35,31,32,0.05)" : "none",
+              background: i % 2 === 0 ? "transparent" : "rgba(35,31,32,0.015)",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "var(--ink-60)" }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{value}</span>
+          </div>
+        ))}
+      </div>
 
       {!contractReady && (
-        <p style={{ fontSize: 11, color: "#666", marginBottom: 20, padding: "10px 14px", border: "1px solid #1a1a1a" }}>
-          Contract address not set. Deploy the contract and configure{" "}
-          <code style={{ color: "#888" }}>NEXT_PUBLIC_FOOTPRINT_ADDRESS</code>.
-        </p>
+        <div className="banner info" style={{ marginBottom: 20 }}>
+          Contract address not set. Deploy and configure{" "}
+          <code style={{ fontFamily: "'DM Mono', monospace", fontSize: 11 }}>NEXT_PUBLIC_FOOTPRINT_ADDRESS</code>.
+        </div>
       )}
 
       {error && (
-        <p style={{ fontSize: 11, color: "#f87171", marginBottom: 16 }}>{error}</p>
+        <div className="banner error">{error}</div>
       )}
 
       <button
         onClick={onSubmit}
         disabled={!contractReady || submitting}
-        className="form-btn-primary"
-        style={{ opacity: (!contractReady || submitting) ? 0.4 : 1, cursor: (!contractReady || submitting) ? "not-allowed" : "pointer" }}
+        className="btn btn-primary"
+        style={{ width: "100%", justifyContent: "center", padding: "13px", fontSize: 14 }}
       >
-        {submitting ? "submitting…" : "record on-chain →"}
+        {submitting ? (
+          <><span className="spinner" /> Submitting…</>
+        ) : (
+          "Record on-chain →"
+        )}
       </button>
-    </>
+    </div>
   );
 }
 
-function FormStyles() {
+function StepHeading({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
   return (
-    <style>{`
-      .field-input {
-        width: 100%;
-        background: #0f0f0f;
-        border: 1px solid #1e1e1e;
-        color: #e8e8e8;
-        font-family: inherit;
-        font-size: 13px;
-        padding: 9px 12px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        transition: border-color 0.15s;
-      }
-      .field-input:focus { border-color: #3dcc7a; }
-      .form-btn-primary {
-        background: none;
-        border: 1px solid #3dcc7a;
-        color: #3dcc7a;
-        font-family: inherit;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        padding: 9px 18px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        transition: background 0.15s, color 0.15s;
-      }
-      .form-btn-primary:hover { background: #3dcc7a; color: #0a0a0a; }
-      .form-btn-ghost {
-        background: none;
-        border: 1px solid #1e1e1e;
-        color: #444;
-        font-family: inherit;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        padding: 9px 18px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        transition: border-color 0.15s, color 0.15s;
-      }
-      .form-btn-ghost:hover { border-color: #333; color: #666; }
-    `}</style>
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+        <span style={{ fontSize: 22 }}>{icon}</span>
+        <h2 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)" }}>{title}</h2>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--ink-60)", marginLeft: 34 }}>{subtitle}</p>
+    </div>
   );
 }

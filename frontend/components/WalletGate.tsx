@@ -7,70 +7,102 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
 
   if (wrongNetwork) {
     return (
-      <Gate>
-        <p style={{ color: "#888", fontSize: 13, marginBottom: 24 }}>
-          This app runs on GenLayer Studio (chain 61999). Switch your wallet to continue.
-        </p>
-        <button onClick={connect} className="btn-primary">
-          switch network
-        </button>
-      </Gate>
+      <GateShell
+        title="Wrong network"
+        body="Verdant runs on GenLayer Studio (chain 61999). Switch your wallet network to continue."
+        action="Switch network"
+        onAction={connect}
+      />
     );
   }
 
   if (!isConnected) {
     return (
-      <Gate>
-        <p style={{ color: "#888", fontSize: 13, marginBottom: 24 }}>
-          Connect a wallet to record and view your on-chain footprint data.
-        </p>
-        <button onClick={connect} className="btn-primary">
-          connect wallet
-        </button>
-      </Gate>
+      <GateShell
+        title="Connect your wallet"
+        body="Connect a wallet to record and view your on-chain carbon footprint data."
+        action="Connect wallet"
+        onAction={connect}
+      />
     );
   }
 
   return <>{children}</>;
 }
 
-function Gate({ children }: { children: React.ReactNode }) {
+function GateShell({
+  title, body, action, onAction,
+}: {
+  title: string;
+  body: string;
+  action: string;
+  onAction: () => void;
+}) {
   return (
     <div
       style={{
-        maxWidth: 480,
-        margin: "120px auto",
-        padding: "0 24px",
-        textAlign: "center",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "calc(100vh - 60px)",
+        padding: "40px 28px",
       }}
     >
-      <p
+      <div
+        className="anim-scale-in"
         style={{
-          fontSize: 11,
-          letterSpacing: "0.15em",
-          color: "#3dcc7a",
-          textTransform: "uppercase",
-          marginBottom: 16,
+          background: "white",
+          border: "1.5px solid rgba(35,31,32,0.07)",
+          borderRadius: 20,
+          padding: "48px 44px",
+          maxWidth: 420,
+          width: "100%",
+          textAlign: "center",
+          boxShadow: "0 8px 40px rgba(35,31,32,0.07)",
         }}
       >
-        Wallet required
-      </p>
-      {children}
+        {/* Icon */}
+        <div
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: "rgba(83,116,95,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 24px",
+            fontSize: 22,
+          }}
+        >
+          🔐
+        </div>
 
-      <style>{`
-        .btn-primary {
-          background: none;
-          border: 1px solid #3dcc7a;
-          color: #3dcc7a;
-          font-family: inherit;
-          font-size: 12px;
-          letter-spacing: 0.1em;
-          padding: 8px 20px;
-          cursor: pointer;
-          transition: background 0.15s, color 0.15s;
-        }
-        .btn-primary:hover { background: #3dcc7a; color: #0a0a0a; }
-      `}</style>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "var(--ink)",
+            marginBottom: 10,
+          }}
+        >
+          {title}
+        </h2>
+        <p
+          style={{
+            fontSize: 14,
+            color: "var(--ink-60)",
+            lineHeight: 1.65,
+            marginBottom: 32,
+          }}
+        >
+          {body}
+        </p>
+        <button onClick={onAction} className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+          {action}
+        </button>
+      </div>
     </div>
   );
 }

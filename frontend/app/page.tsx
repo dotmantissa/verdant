@@ -1,122 +1,195 @@
+"use client";
+
 import Link from "next/link";
+
+const STATS = [
+  { val: "4.7 t", label: "Global average CO₂e / person / year" },
+  { val: "2.3 t", label: "Paris 2°C target per person" },
+  { val: "IEA", label: "Electricity intensity data source" },
+  { val: "DEFRA 2024", label: "Transport emission factors" },
+  { val: "On-chain", label: "Where your record lives" },
+];
+
+const STEPS = [
+  {
+    n: "01",
+    title: "Submit your data",
+    body: "Energy bills, travel records, dietary patterns. You enter the numbers — no estimates, no defaults.",
+  },
+  {
+    n: "02",
+    title: "Real-time verification",
+    body: "Emission factors are fetched live from IEA, DEFRA, and Our World in Data at calculation time.",
+  },
+  {
+    n: "03",
+    title: "Consensus on-chain",
+    body: "Multiple GenLayer validators independently re-run the calculation. All must agree within 5% before anything is written.",
+  },
+  {
+    n: "04",
+    title: "Permanent record",
+    body: "The result is stored against your wallet address. Unchangeable. Comparable year over year.",
+  },
+];
+
+const SOURCES = [
+  ["IEA / Our World in Data", "Electricity intensity by country"],
+  ["DEFRA 2024", "Transport conversion factors"],
+  ["Poore & Nemecek 2018", "Food system emissions"],
+  ["Verra VCS", "Offset project status"],
+  ["Gold Standard", "Offset project status"],
+];
 
 export default function HomePage() {
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "80px 24px" }}>
+    <div className="page">
 
-      {/* Headline */}
-      <div style={{ marginBottom: 64 }}>
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <section style={{ marginBottom: 80 }}>
         <p
+          className="anim-fade-up"
           style={{
-            fontSize: 11,
-            letterSpacing: "0.15em",
-            color: "#3dcc7a",
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
             textTransform: "uppercase",
-            marginBottom: 24,
+            color: "var(--forest)",
+            marginBottom: 20,
           }}
         >
           Personal carbon footprint — on-chain
         </p>
+
         <h1
+          className="anim-fade-up delay-1"
           style={{
-            fontSize: "clamp(2rem, 5vw, 3.5rem)",
-            fontWeight: 300,
-            letterSpacing: "-0.02em",
-            lineHeight: 1.15,
-            color: "#e8e8e8",
-            maxWidth: 640,
+            fontSize: "clamp(2.4rem, 6vw, 4rem)",
+            fontWeight: 600,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
+            color: "var(--ink)",
+            maxWidth: 680,
+            marginBottom: 24,
           }}
         >
-          Your footprint,
-          <br />
-          <span style={{ color: "#3dcc7a" }}>actually verified.</span>
+          Your footprint,{" "}
+          <span
+            style={{
+              color: "var(--forest)",
+              position: "relative",
+              display: "inline-block",
+            }}
+          >
+            actually verified.
+          </span>
         </h1>
+
         <p
+          className="anim-fade-up delay-2"
           style={{
-            fontSize: 14,
-            color: "#666",
-            maxWidth: 520,
-            lineHeight: 1.7,
-            marginTop: 24,
+            fontSize: 16,
+            color: "var(--ink-60)",
+            maxWidth: 560,
+            lineHeight: 1.75,
+            marginBottom: 40,
           }}
         >
-          Verdant calculates your carbon footprint from energy, transport, and
-          diet data you submit — cross-referenced against IEA, DEFRA, and Our
-          World in Data in real time. The result is recorded on-chain, against
-          your wallet, permanently.
+          Verdant calculates your carbon footprint from energy, transport, and diet
+          data — cross-referenced against IEA, DEFRA, and Our World in Data in real
+          time. The result is recorded on-chain, against your wallet, permanently.
         </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 36, flexWrap: "wrap" }}>
-          <Link href="/calculate" className="cta-primary">
-            calculate footprint →
+
+        <div className="anim-fade-up delay-3" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link href="/calculate" className="btn btn-primary" style={{ fontSize: 14, padding: "12px 24px" }}>
+            Calculate footprint →
           </Link>
-          <Link href="/offsets" className="cta-ghost">
-            view verified offsets
+          <Link href="/offsets" className="btn btn-outline" style={{ fontSize: 14, padding: "12px 24px" }}>
+            View verified offsets
           </Link>
         </div>
-      </div>
+      </section>
 
-      {/* Divider line */}
-      <div style={{ borderTop: "1px solid #1a1a1a", marginBottom: 64 }} />
-
-      {/* Data points */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "1px",
-          background: "#1a1a1a",
-          marginBottom: 64,
-        }}
-      >
-        {[
-          { val: "4.7 t", label: "global average CO₂e / person / year" },
-          { val: "2.3 t", label: "Paris 2°C target per person" },
-          { val: "IEA", label: "electricity data source" },
-          { val: "DEFRA 2024", label: "transport factors" },
-          { val: "on-chain", label: "where your record lives" },
-        ].map(({ val, label }) => (
-          <div key={label} style={{ background: "#0a0a0a", padding: "24px 20px" }}>
+      {/* ── Stats strip ──────────────────────────────────────────────── */}
+      <section style={{ marginBottom: 80 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+            gap: 12,
+          }}
+        >
+          {STATS.map(({ val, label }, i) => (
             <div
+              key={label}
+              className={`anim-fade-up delay-${i + 1}`}
               style={{
-                fontSize: 20,
-                fontWeight: 500,
-                color: "#e8e8e8",
-                letterSpacing: "-0.02em",
-                marginBottom: 6,
+                background: "white",
+                border: "1.5px solid rgba(35,31,32,0.06)",
+                borderRadius: 12,
+                padding: "20px 18px",
+                transition: "transform 0.25s ease, box-shadow 0.25s ease",
               }}
             >
-              {val}
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "var(--forest)",
+                  marginBottom: 6,
+                }}
+              >
+                {val}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--ink-30)", lineHeight: 1.45 }}>{label}</div>
             </div>
-            <div style={{ fontSize: 11, color: "#444", lineHeight: 1.5 }}>{label}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
 
-      {/* How it works — plain prose, no cards */}
-      <div
+      <hr className="divider" />
+
+      {/* ── How it works + Offset verification ───────────────────────── */}
+      <section
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: 48,
-          marginBottom: 64,
+          gap: 64,
+          marginBottom: 80,
+          alignItems: "start",
         }}
       >
         <div>
-          <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#555", textTransform: "uppercase", marginBottom: 20 }}>
-            How it works
-          </p>
-          <ol style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 20 }}>
-            {[
-              ["01", "Submit your data", "Energy bills, travel records, dietary patterns. You enter the numbers."],
-              ["02", "Real-time verification", "Emission factors are fetched from IEA, DEFRA, and OWID at calculation time. Not a static table."],
-              ["03", "Consensus on-chain", "Multiple GenLayer validators independently re-run the calculation. All must agree within 5% before anything is written."],
-              ["04", "Permanent record", "The result is stored against your wallet address. Unchangeable. Comparable year over year."],
-            ].map(([n, title, body]) => (
-              <li key={n} style={{ display: "flex", gap: 20 }}>
-                <span style={{ fontSize: 11, color: "#3dcc7a", flexShrink: 0, paddingTop: 2 }}>{n}</span>
+          <p className="section-label">How it works</p>
+          <ol style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 0 }}>
+            {STEPS.map(({ n, title, body }, i) => (
+              <li
+                key={n}
+                className={`anim-fade-up delay-${i + 1}`}
+                style={{
+                  display: "flex",
+                  gap: 18,
+                  padding: "18px 0",
+                  borderBottom: i < STEPS.length - 1 ? "1px solid rgba(35,31,32,0.06)" : "none",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--sage)",
+                    flexShrink: 0,
+                    paddingTop: 3,
+                    letterSpacing: "0.05em",
+                    fontFamily: "'DM Mono', monospace",
+                  }}
+                >
+                  {n}
+                </span>
                 <div>
-                  <p style={{ fontSize: 13, color: "#e8e8e8", marginBottom: 4 }}>{title}</p>
-                  <p style={{ fontSize: 12, color: "#555", lineHeight: 1.65 }}>{body}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 5 }}>{title}</p>
+                  <p style={{ fontSize: 13, color: "var(--ink-60)", lineHeight: 1.65 }}>{body}</p>
                 </div>
               </li>
             ))}
@@ -124,79 +197,80 @@ export default function HomePage() {
         </div>
 
         <div>
-          <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#555", textTransform: "uppercase", marginBottom: 20 }}>
-            Offset verification
+          <p className="section-label" style={{ marginBottom: 20 }}>Offset verification</p>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--ink-60)",
+              lineHeight: 1.75,
+              marginBottom: 32,
+            }}
+          >
+            Each offset project is checked against its Verra VCS or Gold Standard
+            public listing before it can be retired against. The contract fetches
+            live monitoring data and runs an LLM assessment. Fraudulent or inactive
+            projects are rejected automatically.
           </p>
-          <p style={{ fontSize: 12, color: "#555", lineHeight: 1.7, marginBottom: 20 }}>
-            Each offset project in the registry is checked against its Verra VCS
-            or Gold Standard public listing before it can be retired against. The
-            contract fetches the live monitoring data and runs an LLM assessment.
-            Fraudulent or inactive projects are rejected automatically — you cannot
-            retire against a project that does not pass.
-          </p>
-          <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#555", textTransform: "uppercase", marginBottom: 20 }}>
-            Data sources
-          </p>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+
+          <p className="section-label">Data sources</p>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
-              {[
-                ["IEA / Our World in Data", "Electricity intensity by country"],
-                ["DEFRA 2024", "Transport conversion factors"],
-                ["Poore & Nemecek 2018", "Food system emissions"],
-                ["Verra VCS", "Offset project status"],
-                ["Gold Standard", "Offset project status"],
-              ].map(([src, scope]) => (
-                <tr key={src} style={{ borderBottom: "1px solid #111" }}>
-                  <td style={{ padding: "8px 0", color: "#888", paddingRight: 24 }}>{src}</td>
-                  <td style={{ padding: "8px 0", color: "#444" }}>{scope}</td>
+              {SOURCES.map(([src, scope], i) => (
+                <tr
+                  key={src}
+                  className={`anim-fade-up delay-${i + 1}`}
+                  style={{ borderBottom: "1px solid rgba(35,31,32,0.06)" }}
+                >
+                  <td
+                    style={{
+                      padding: "11px 0",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: "var(--ink)",
+                      paddingRight: 24,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {src}
+                  </td>
+                  <td style={{ padding: "11px 0", fontSize: 13, color: "var(--ink-60)" }}>{scope}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      {/* Footer line */}
-      <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 32, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-        <span style={{ fontSize: 11, color: "#333" }}>
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <footer
+        style={{
+          borderTop: "1.5px solid rgba(35,31,32,0.06)",
+          paddingTop: 32,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <span style={{ fontSize: 12, color: "var(--ink-30)" }}>
           Footprint records stored on GenLayer. No account required.
         </span>
         <a
           href="https://github.com/dotmantissa/verdant"
-          style={{ fontSize: 11, color: "#333", textDecoration: "none" }}
+          style={{ fontSize: 12, color: "var(--ink-30)", textDecoration: "none", transition: "color 0.2s" }}
+          onMouseOver={e => (e.currentTarget.style.color = "var(--forest)")}
+          onMouseOut={e => (e.currentTarget.style.color = "var(--ink-30)")}
         >
           github.com/dotmantissa/verdant
         </a>
-      </div>
+      </footer>
 
       <style>{`
-        .cta-primary {
-          display: inline-block;
-          border: 1px solid #3dcc7a;
-          color: #3dcc7a;
-          font-family: inherit;
-          font-size: 12px;
-          letter-spacing: 0.08em;
-          padding: 9px 18px;
-          text-decoration: none;
-          transition: background 0.15s, color 0.15s;
-        }
-        .cta-primary:hover { background: #3dcc7a; color: #0a0a0a; }
-        .cta-ghost {
-          display: inline-block;
-          border: 1px solid #222;
-          color: #555;
-          font-family: inherit;
-          font-size: 12px;
-          letter-spacing: 0.08em;
-          padding: 9px 18px;
-          text-decoration: none;
-          transition: border-color 0.15s, color 0.15s;
-        }
-        .cta-ghost:hover { border-color: #444; color: #888; }
-        @media (max-width: 640px) {
-          div[style*="gridTemplateColumns: 1fr 1fr"] {
+        @media (max-width: 680px) {
+          section[style*="gridTemplateColumns: 1fr 1fr"] {
             grid-template-columns: 1fr !important;
+            gap: 40px !important;
           }
         }
       `}</style>

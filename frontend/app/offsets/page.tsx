@@ -81,6 +81,14 @@ const TYPE_LABELS: Record<string, string> = {
   cookstoves: "Cookstoves",
 };
 
+const TYPE_ICONS: Record<string, string> = {
+  forestry: "🌳",
+  renewable_energy: "⚡",
+  methane_capture: "💨",
+  blue_carbon: "🌊",
+  cookstoves: "🔥",
+};
+
 export default function OffsetsPage() {
   return (
     <WalletGate>
@@ -92,6 +100,7 @@ export default function OffsetsPage() {
 function Marketplace() {
   const { signer } = useWallet();
   const [filter, setFilter] = useState("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [modal, setModal] = useState<Project | null>(null);
   const [form, setForm] = useState({ tonnes: "1.0", name: "", reason: "" });
   const [retiring, setRetiring] = useState(false);
@@ -123,147 +132,183 @@ function Marketplace() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "52px 24px 80px" }}>
+    <div className="page">
       {/* Header */}
-      <p style={{ fontSize: 11, letterSpacing: "0.15em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 20 }}>
-        Verified offset projects
-      </p>
-      <p style={{ fontSize: 12, color: "#444", maxWidth: 560, lineHeight: 1.7, marginBottom: 36 }}>
-        Each project is checked against its Verra VCS or Gold Standard public registry before
-        retirement is permitted. Inactive or fraudulent projects are rejected automatically.
-      </p>
+      <div className="anim-fade-up" style={{ marginBottom: 48 }}>
+        <h1
+          style={{
+            fontSize: 32,
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "var(--ink)",
+            marginBottom: 10,
+          }}
+        >
+          Verified offsets
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--ink-60)", maxWidth: 560, lineHeight: 1.7 }}>
+          Each project is checked against its Verra VCS or Gold Standard public registry.
+          Inactive or fraudulent projects are rejected automatically.
+        </p>
+      </div>
 
       {!contractReady && (
-        <div style={{ fontSize: 11, color: "#666", padding: "10px 14px", border: "1px solid #1a1a1a", marginBottom: 28 }}>
+        <div className="banner info">
           Offsets contract not configured. Deploy and set{" "}
-          <code style={{ color: "#888" }}>NEXT_PUBLIC_OFFSETS_ADDRESS</code> to enable retirements.
+          <code className="mono">NEXT_PUBLIC_OFFSETS_ADDRESS</code> to enable retirements.
         </div>
       )}
 
       {result && (
-        <div style={{ fontSize: 11, color: "#3dcc7a", padding: "10px 14px", border: "1px solid #1a3d26", marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Retirement submitted — {result.project} — tx: {result.hash.slice(0, 20)}…</span>
-          <button onClick={() => setResult(null)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontFamily: "inherit", fontSize: 11 }}>dismiss</button>
+        <div className="banner success" style={{ justifyContent: "space-between" }}>
+          <span>
+            Retirement submitted — <strong>{result.project}</strong>
+            <span className="mono" style={{ marginLeft: 8, opacity: 0.7 }}>{result.hash.slice(0, 18)}…</span>
+          </span>
+          <button
+            onClick={() => setResult(null)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--forest)", fontFamily: "inherit", fontSize: 13, padding: 0 }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Type filter */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 32, flexWrap: "wrap" }}>
+      {/* Filter pills */}
+      <div className="anim-fade-up delay-1" style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
         {types.map(t => (
           <button
             key={t}
             onClick={() => setFilter(t)}
-            style={{
-              background: "none",
-              border: `1px solid ${filter === t ? "#3dcc7a" : "#1e1e1e"}`,
-              color: filter === t ? "#3dcc7a" : "#444",
-              fontFamily: "inherit",
-              fontSize: 10,
-              letterSpacing: "0.08em",
-              padding: "4px 12px",
-              cursor: "pointer",
-            }}
+            className={`tag${filter === t ? " active" : ""}`}
           >
-            {t === "all" ? "all" : TYPE_LABELS[t] ?? t}
+            {t !== "all" && TYPE_ICONS[t] && <span>{TYPE_ICONS[t]}</span>}
+            {t === "all" ? "All" : TYPE_LABELS[t] ?? t}
           </button>
         ))}
       </div>
 
-      {/* Projects table */}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
-            {["id", "project", "type", "country", "registry", "price / t CO₂e", ""].map(h => (
-              <th key={h} style={{ padding: "6px 16px 6px 0", textAlign: "left", fontSize: 10, letterSpacing: "0.08em", color: "#333", fontWeight: 400 }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(p => (
-            <ProjectRow
-              key={p.project_id}
-              project={p}
-              contractReady={contractReady}
-              onRetire={() => {
-                setModal(p);
-                setForm({ tonnes: "1.0", name: "", reason: "" });
-                setError("");
-              }}
-            />
-          ))}
-        </tbody>
-      </table>
+      {/* Project cards grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: 16,
+        }}
+      >
+        {filtered.map((p, i) => (
+          <ProjectCard
+            key={p.project_id}
+            project={p}
+            index={i}
+            isExpanded={expanded === p.project_id}
+            contractReady={contractReady}
+            onToggle={() => setExpanded(expanded === p.project_id ? null : p.project_id)}
+            onRetire={() => {
+              setModal(p);
+              setForm({ tonnes: "1.0", name: "", reason: "" });
+              setError("");
+            }}
+          />
+        ))}
+      </div>
 
-      {/* Modal */}
+      {/* Retire modal */}
       {modal && (
         <div
-          style={{
-            position: "fixed", inset: 0, background: "rgba(10,10,10,0.9)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 100, padding: 24,
-          }}
+          className="modal-overlay"
           onClick={e => e.target === e.currentTarget && setModal(null)}
         >
-          <div style={{ background: "#0f0f0f", border: "1px solid #1e1e1e", width: "100%", maxWidth: 440, padding: 32 }}>
-            <p style={{ fontSize: 10, letterSpacing: "0.12em", color: "#3dcc7a", textTransform: "uppercase", marginBottom: 12 }}>
-              Retire offsets
-            </p>
-            <p style={{ fontSize: 14, color: "#e8e8e8", marginBottom: 6 }}>{modal.name}</p>
-            <p style={{ fontSize: 11, color: "#444", marginBottom: 28 }}>{modal.project_id} · ${modal.price_usd_per_tonne} / t CO₂e</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 28 }}>
+          <div className="modal-box">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
               <div>
-                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>tonnes CO₂e</label>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--forest)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Retire offsets
+                </p>
+                <h3
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                    color: "var(--ink)",
+                    marginBottom: 4,
+                  }}
+                >
+                  {modal.name}
+                </h3>
+                <p className="mono" style={{ color: "var(--ink-30)" }}>
+                  {modal.project_id} · ${modal.price_usd_per_tonne} / t CO₂e
+                </p>
+              </div>
+              <button
+                onClick={() => setModal(null)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--ink-30)", fontSize: 20, lineHeight: 1,
+                  padding: "2px 6px", borderRadius: 6,
+                  transition: "color 0.2s",
+                }}
+                onMouseOver={e => (e.currentTarget.style.color = "var(--ink)")}
+                onMouseOut={e => (e.currentTarget.style.color = "var(--ink-30)")}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+              <div className="field-wrap" style={{ marginBottom: 0 }}>
+                <label className="field-label">Tonnes CO₂e</label>
                 <input
                   type="number" min="0.01" step="0.01"
                   value={form.tonnes}
                   onChange={e => setForm(f => ({ ...f, tonnes: e.target.value }))}
-                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                  className="field-input"
                 />
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>beneficiary name</label>
+              <div className="field-wrap" style={{ marginBottom: 0 }}>
+                <label className="field-label">Beneficiary name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="your name or organisation"
-                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                  placeholder="Your name or organisation"
+                  className="field-input"
                 />
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 6, letterSpacing: "0.06em" }}>reason</label>
+              <div className="field-wrap" style={{ marginBottom: 0 }}>
+                <label className="field-label">Reason</label>
                 <input
                   type="text"
                   value={form.reason}
                   onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
                   placeholder="e.g. 2024 annual footprint offset"
-                  style={{ width: "100%", background: "#0a0a0a", border: "1px solid #1e1e1e", color: "#e8e8e8", fontFamily: "inherit", fontSize: 13, padding: "9px 12px", outline: "none" }}
+                  className="field-input"
                 />
               </div>
             </div>
 
-            {error && <p style={{ fontSize: 11, color: "#f87171", marginBottom: 16 }}>{error}</p>}
+            {error && <div className="banner error" style={{ marginBottom: 16 }}>{error}</div>}
 
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={() => setModal(null)}
-                style={{ flex: 1, background: "none", border: "1px solid #1e1e1e", color: "#444", fontFamily: "inherit", fontSize: 11, letterSpacing: "0.08em", padding: "9px 0", cursor: "pointer" }}
-              >
-                cancel
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setModal(null)} className="btn btn-ghost" style={{ flex: 1, justifyContent: "center" }}>
+                Cancel
               </button>
               <button
                 onClick={handleRetire}
                 disabled={retiring || !form.tonnes || !form.name || !form.reason}
-                style={{
-                  flex: 2, background: "none",
-                  border: "1px solid #3dcc7a", color: "#3dcc7a",
-                  fontFamily: "inherit", fontSize: 11, letterSpacing: "0.08em",
-                  padding: "9px 0", cursor: retiring ? "not-allowed" : "pointer",
-                  opacity: (retiring || !form.tonnes || !form.name || !form.reason) ? 0.4 : 1,
-                }}
+                className="btn btn-primary"
+                style={{ flex: 2, justifyContent: "center" }}
               >
-                {retiring ? "submitting…" : "confirm retirement →"}
+                {retiring ? <><span className="spinner" /> Submitting…</> : "Confirm retirement →"}
               </button>
             </div>
           </div>
@@ -273,55 +318,137 @@ function Marketplace() {
   );
 }
 
-function ProjectRow({
-  project, contractReady, onRetire,
+function ProjectCard({
+  project, index, isExpanded, contractReady, onToggle, onRetire,
 }: {
   project: Project;
+  index: number;
+  isExpanded: boolean;
   contractReady: boolean;
+  onToggle: () => void;
   onRetire: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const regColor = project.registry === "verra" ? "#3dcc7a" : project.registry === "gold_standard" ? "#f59e0b" : "#555";
+  const isVerra = project.registry === "verra";
+  const registryColor = isVerra ? "var(--forest)" : "#b7791f";
+  const registryBg = isVerra ? "rgba(83,116,95,0.1)" : "rgba(183,121,31,0.1)";
 
   return (
-    <>
-      <tr
-        style={{ borderBottom: "1px solid #111", cursor: "pointer" }}
-        onClick={() => setExpanded(v => !v)}
-      >
-        <td style={{ padding: "12px 16px 12px 0", color: "#444", fontSize: 11 }}>{project.project_id}</td>
-        <td style={{ padding: "12px 16px 12px 0", color: "#e8e8e8" }}>{project.name}</td>
-        <td style={{ padding: "12px 16px 12px 0", color: "#555", fontSize: 11 }}>{TYPE_LABELS[project.project_type] ?? project.project_type}</td>
-        <td style={{ padding: "12px 16px 12px 0", color: "#555", fontSize: 11 }}>{project.country}</td>
-        <td style={{ padding: "12px 16px 12px 0", fontSize: 11 }}>
-          <span style={{ color: regColor }}>{project.registry === "gold_standard" ? "Gold Standard" : "Verra VCS"}</span>
-        </td>
-        <td style={{ padding: "12px 16px 12px 0", color: "#e8e8e8", fontWeight: 500 }}>
-          ${project.price_usd_per_tonne}
-        </td>
-        <td style={{ padding: "12px 0" }}>
-          <button
-            onClick={e => { e.stopPropagation(); onRetire(); }}
-            disabled={!contractReady}
+    <div
+      className={`anim-fade-up delay-${Math.min(index + 1, 6)}`}
+      style={{
+        background: "white",
+        border: "1.5px solid rgba(35,31,32,0.07)",
+        borderRadius: 14,
+        overflow: "hidden",
+        transition: "box-shadow 0.25s ease, transform 0.25s ease",
+        cursor: "pointer",
+      }}
+      onMouseOver={e => {
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 28px rgba(35,31,32,0.1)";
+        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+      }}
+      onMouseOut={e => {
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+        (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+      }}
+      onClick={onToggle}
+    >
+      {/* Card top */}
+      <div style={{ padding: "20px 20px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 20 }}>{TYPE_ICONS[project.project_type] ?? "🌿"}</span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: "var(--ink-30)",
+              }}
+            >
+              {TYPE_LABELS[project.project_type] ?? project.project_type}
+            </span>
+          </div>
+          <span
             style={{
-              background: "none", border: "1px solid #1e1e1e",
-              color: "#555", fontFamily: "inherit", fontSize: 10,
-              letterSpacing: "0.06em", padding: "4px 12px", cursor: contractReady ? "pointer" : "not-allowed",
-              opacity: contractReady ? 1 : 0.3,
-              whiteSpace: "nowrap",
+              fontSize: 11,
+              fontWeight: 600,
+              padding: "3px 8px",
+              borderRadius: 100,
+              background: registryBg,
+              color: registryColor,
+              flexShrink: 0,
             }}
           >
-            retire
-          </button>
-        </td>
-      </tr>
-      {expanded && (
-        <tr style={{ borderBottom: "1px solid #111" }}>
-          <td colSpan={7} style={{ padding: "8px 0 14px", fontSize: 11, color: "#444", lineHeight: 1.65 }}>
+            {isVerra ? "Verra VCS" : "Gold Standard"}
+          </span>
+        </div>
+
+        <h3
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: "var(--ink)",
+            lineHeight: 1.3,
+            marginBottom: 6,
+          }}
+        >
+          {project.name}
+        </h3>
+
+        <p style={{ fontSize: 12, color: "var(--ink-30)" }}>
+          {project.country} · <span className="mono">{project.project_id}</span>
+        </p>
+      </div>
+
+      {/* Expanded description */}
+      {isExpanded && (
+        <div
+          style={{
+            padding: "0 20px 16px",
+            animation: "fadeIn 0.2s ease both",
+          }}
+        >
+          <p style={{ fontSize: 13, color: "var(--ink-60)", lineHeight: 1.65 }}>
             {project.description}
-          </td>
-        </tr>
+          </p>
+        </div>
       )}
-    </>
+
+      {/* Footer */}
+      <div
+        style={{
+          padding: "14px 20px",
+          borderTop: "1px solid rgba(35,31,32,0.06)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "var(--ink)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            ${project.price_usd_per_tonne}
+          </span>
+          <span style={{ fontSize: 12, color: "var(--ink-30)", marginLeft: 4 }}>/ t CO₂e</span>
+        </div>
+
+        <button
+          onClick={e => { e.stopPropagation(); onRetire(); }}
+          disabled={!contractReady}
+          className="btn btn-outline"
+          style={{ fontSize: 12, padding: "7px 14px" }}
+        >
+          Retire →
+        </button>
+      </div>
+    </div>
   );
 }
