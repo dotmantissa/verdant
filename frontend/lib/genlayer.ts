@@ -1,9 +1,8 @@
-import { JsonRpcSigner, Contract, BrowserProvider } from "ethers";
+import { createClient, chains } from "genlayer-js";
+import type { GenLayerClient, GenLayerTransaction, Hash } from "genlayer-js/types";
 import {
   FOOTPRINT_CONTRACT_ADDRESS,
   OFFSETS_CONTRACT_ADDRESS,
-  FOOTPRINT_ABI,
-  OFFSETS_ABI,
   RPC_URL,
   TX_POLL_INTERVAL,
   TX_POLL_RETRIES,
@@ -15,28 +14,42 @@ export type TxReceipt = {
   result?: unknown;
 };
 
-async function pollReceipt(hash: string): Promise<TxReceipt> {
+let readClient: GenLayerClient<never>;
+
+function getReadClient(): GenLayerClient<never> {
+  if (!readClient) {
+    readClient = createClient({
+      chain: chains.studionet,
+      endpoint: RPC_URL,
+    }) as unknown as GenLayerClient<never>;
+  }
+  return readClient;
+}
+
+function createWriteClient(walletAddress: string): GenLayerClient<never> {
+  return createClient({
+    chain: chains.studionet,
+    endpoint: RPC_URL,
+    account: walletAddress as `0x${string}`,
+  }) as unknown as GenLayerClient<never>;
+}
+
+function isSuccess(tx: GenLayerTransaction): boolean {
+  return tx.statusName === "FINALIZED" || tx.statusName === "ACCEPTED";
+}
+
+function isFailed(tx: GenLayerTransaction): boolean {
+  return tx.statusName === "CANCELED" || tx.resultName === "FAILURE";
+}
+
+async function pollGenLayerTx(hash: Hash): Promise<TxReceipt> {
+  const client = getReadClient();
   for (let i = 0; i < TX_POLL_RETRIES; i++) {
     await new Promise((r) => setTimeout(r, TX_POLL_INTERVAL));
     try {
-      const res = await fetch(RPC_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "eth_getTransactionReceipt",
-          params: [hash],
-          id: 1,
-        }),
-      });
-      const json = await res.json();
-      const receipt = json?.result;
-      if (receipt && receipt.status === "0x1") {
-        return { status: "finalized", hash, result: receipt };
-      }
-      if (receipt && receipt.status === "0x0") {
-        return { status: "failed", hash };
-      }
+      const tx = await client.getTransaction({ hash: hash as Hash });
+      if (isSuccess(tx)) return { status: "finalized", hash, result: tx };
+      if (isFailed(tx)) return { status: "failed", hash };
     } catch {
       // keep polling
     }
@@ -44,73 +57,70 @@ async function pollReceipt(hash: string): Promise<TxReceipt> {
   return { status: "pending", hash };
 }
 
-export function getFootprintContract(signer: JsonRpcSigner) {
-  return new Contract(FOOTPRINT_CONTRACT_ADDRESS, FOOTPRINT_ABI, signer);
-}
+/* ── Reads ─────────────────────────────────────────────────────────── */
 
-export function getOffsetsContract(signer: JsonRpcSigner) {
-  return new Contract(OFFSETS_CONTRACT_ADDRESS, OFFSETS_ABI, signer);
-}
-
-export async function readFootprintHistory(
-  address: string,
-  provider: BrowserProvider
-) {
+export async function readFootprintHistory(address: string) {
   if (!FOOTPRINT_CONTRACT_ADDRESS) return [];
-  const contract = new Contract(
-    FOOTPRINT_CONTRACT_ADDRESS,
-    FOOTPRINT_ABI,
-    provider
-  );
-  const raw = await contract.get_footprint_history(address);
+  const client = getReadClient();
   try {
-    return JSON.parse(raw as string) as Record<string, unknown>[];
+    const raw = await client.readContract({
+      address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
+      functionName: "get_footprint_history",
+      args: [address],
+    });
+    if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>[];
+    return [];
   } catch {
     return [];
   }
 }
 
-export async function readEmissionContext(provider: BrowserProvider) {
+export async function readEmissionContext() {
   if (!FOOTPRINT_CONTRACT_ADDRESS) return {};
-  const contract = new Contract(
-    FOOTPRINT_CONTRACT_ADDRESS,
-    FOOTPRINT_ABI,
-    provider
-  );
-  const raw = await contract.get_emission_context();
+  const client = getReadClient();
   try {
-    return JSON.parse(raw as string) as Record<string, unknown>;
+    const raw = await client.readContract({
+      address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
+      functionName: "get_emission_context",
+    });
+    if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>;
+    return {};
   } catch {
     return {};
   }
 }
 
-export async function readAllOffsetProjects(
-  projectIds: string[],
-  provider: BrowserProvider
-) {
+export async function readOffsetProject(projectId: string) {
+  if (!OFFSETS_CONTRACT_ADDRESS) return null;
+  const client = getReadClient();
+  try {
+    const raw = await client.readContract({
+      address: OFFSETS_CONTRACT_ADDRESS as `0x${string}`,
+      functionName: "get_project",
+      args: [projectId],
+    });
+    if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function readAllOffsetProjects(projectIds: string[]) {
   if (!OFFSETS_CONTRACT_ADDRESS) return [];
-  const contract = new Contract(
-    OFFSETS_CONTRACT_ADDRESS,
-    OFFSETS_ABI,
-    provider
-  );
   const results = await Promise.all(
     projectIds.map(async (id) => {
-      const raw = await contract.get_project(id);
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw as string) as Record<string, unknown>;
-      } catch {
-        return null;
-      }
+      const p = await readOffsetProject(id);
+      return p;
     })
   );
   return results.filter(Boolean);
 }
 
+/* ── Writes ────────────────────────────────────────────────────────── */
+
 export async function submitFootprint(
-  signer: JsonRpcSigner,
+  walletAddress: string,
   params: {
     energyData: string;
     transportData: string;
@@ -120,20 +130,25 @@ export async function submitFootprint(
     label: string;
   }
 ): Promise<TxReceipt> {
-  const contract = getFootprintContract(signer);
-  const tx = await contract.calculate_footprint(
-    params.energyData,
-    params.transportData,
-    params.dietData,
-    params.countryCode,
-    params.year,
-    params.label
-  );
-  return pollReceipt(tx.hash);
+  const client = createWriteClient(walletAddress);
+  const txId = await client.writeContract({
+    address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
+    functionName: "calculate_footprint",
+    args: [
+      params.energyData,
+      params.transportData,
+      params.dietData,
+      params.countryCode,
+      params.year,
+      params.label,
+    ],
+    value: BigInt(0),
+  });
+  return pollGenLayerTx(txId as Hash);
 }
 
 export async function retireOffsets(
-  signer: JsonRpcSigner,
+  walletAddress: string,
   params: {
     projectId: string;
     tonnesCo2e: string;
@@ -141,12 +156,17 @@ export async function retireOffsets(
     reason: string;
   }
 ): Promise<TxReceipt> {
-  const contract = getOffsetsContract(signer);
-  const tx = await contract.retire_offsets(
-    params.projectId,
-    params.tonnesCo2e,
-    params.beneficiaryName,
-    params.reason
-  );
-  return pollReceipt(tx.hash);
+  const client = createWriteClient(walletAddress);
+  const txId = await client.writeContract({
+    address: OFFSETS_CONTRACT_ADDRESS as `0x${string}`,
+    functionName: "retire_offsets",
+    args: [
+      params.projectId,
+      params.tonnesCo2e,
+      params.beneficiaryName,
+      params.reason,
+    ],
+    value: BigInt(0),
+  });
+  return pollGenLayerTx(txId as Hash);
 }

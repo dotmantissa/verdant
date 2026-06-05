@@ -57,7 +57,7 @@ export default function CalculatePage() {
 }
 
 function Calculator() {
-  const { signer } = useWallet();
+  const { address } = useWallet();
   const [step, setStep]           = useState(0);
   const [animKey, setAnimKey]     = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
@@ -88,11 +88,11 @@ function Calculator() {
   }
 
   async function handleSubmit() {
-    if (!signer) return;
+    if (!address) return;
     setSubmitting(true);
     setTxError("");
     try {
-      const tx = await submitFootprint(signer, {
+      const tx = await submitFootprint(address, {
         energyData: JSON.stringify({
           electricity_kwh: parseFloat(energy.electricity_kwh) || 0,
           heating_type:    energy.heating_type,

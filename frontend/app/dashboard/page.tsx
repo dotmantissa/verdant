@@ -35,18 +35,18 @@ export default function DashboardPage() {
 }
 
 function Dashboard() {
-  const { address, provider } = useWallet();
+  const { address } = useWallet();
   const [history, setHistory] = useState<FootprintRecord[]>([]);
   const [ctx,     setCtx]     = useState<EmissionCtx | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
   useEffect(() => {
-    if (!address || !provider) return;
+    if (!address) return;
     setLoading(true);
     Promise.all([
-      readFootprintHistory(address, provider),
-      readEmissionContext(provider),
+      readFootprintHistory(address),
+      readEmissionContext(),
     ])
       .then(([hist, emCtx]) => {
         setHistory(hist as FootprintRecord[]);
@@ -54,7 +54,7 @@ function Dashboard() {
       })
       .catch((e: unknown) => setError((e as Error).message ?? "Failed to load records."))
       .finally(() => setLoading(false));
-  }, [address, provider]);
+  }, [address]);
 
   if (loading) {
     return (

@@ -102,7 +102,7 @@ export default function OffsetsPage() {
 }
 
 function Marketplace() {
-  const { signer } = useWallet();
+  const { address } = useWallet();
   const [filter,   setFilter]  = useState("all");
   const [expanded, setExpanded]= useState<string | null>(null);
   const [modal,    setModal]   = useState<Project | null>(null);
@@ -116,11 +116,11 @@ function Marketplace() {
   const filtered = filter === "all" ? PROJECTS : PROJECTS.filter(p => p.project_type === filter);
 
   async function handleRetire() {
-    if (!signer || !modal) return;
+    if (!address || !modal) return;
     setRetiring(true);
     setError("");
     try {
-      const tx = await retireOffsets(signer, {
+      const tx = await retireOffsets(address, {
         projectId:       modal.project_id,
         tonnesCo2e:      form.tonnes,
         beneficiaryName: form.name,
