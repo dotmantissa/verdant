@@ -1,7 +1,7 @@
 // GenLayer Studio network
 export const CHAIN_ID = 61999;
 export const CHAIN_ID_HEX = "0xF22F";
-export const RPC_URL = "http://127.0.0.1:4000/api";
+export const RPC_URL = "https://studio.genlayer.com/api";
 export const NETWORK_NAME = "GenLayer Studio";
 export const NETWORK_CURRENCY = { name: "GEN", symbol: "GEN", decimals: 18 };
 
