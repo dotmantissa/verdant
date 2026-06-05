@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { readFootprintHistory, readEmissionContext } from "@/lib/genlayer";
+import { IconBarChart } from "@/components/Icons";
 
 type FootprintRecord = {
   year: number;
@@ -103,10 +104,10 @@ function Dashboard() {
               width: 50, height: 50, borderRadius: "50%",
               background: "var(--sage-15)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 22px", fontSize: 22,
+              margin: "0 auto 22px", color: "var(--forest)",
             }}
           >
-            📊
+            <IconBarChart size={22} />
           </div>
           <h2 style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 10, color: "var(--ink)" }}>
             No records yet

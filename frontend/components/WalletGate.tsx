@@ -1,6 +1,7 @@
 "use client";
 
 import { useWallet } from "@/hooks/useWallet";
+import { IconLock, IconLink } from "@/components/Icons";
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
   const { isConnected, wrongNetwork, connect } = useWallet();
@@ -8,7 +9,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
   if (wrongNetwork) {
     return (
       <GateShell
-        icon="⛓"
+        icon={<IconLink size={22} />}
         title="Switch your network"
         body="Verdant runs on GenLayer Studio (chain 61999). Open your wallet and switch over, then you're good to go."
         action="Switch network"
@@ -20,7 +21,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
   if (!isConnected) {
     return (
       <GateShell
-        icon="🔐"
+        icon={<IconLock size={22} />}
         title="Connect your wallet"
         body="Your footprint records live on-chain, tied to your wallet address. Connect to record or view your data."
         action="Connect wallet"
@@ -35,7 +36,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
 function GateShell({
   icon, title, body, action, onAction,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   body: string;
   action: string;
@@ -74,7 +75,7 @@ function GateShell({
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto 22px",
-            fontSize: 22,
+            color: "var(--forest)",
           }}
         >
           {icon}

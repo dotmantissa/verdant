@@ -5,6 +5,7 @@ import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { submitFootprint } from "@/lib/genlayer";
 import { FOOTPRINT_CONTRACT_ADDRESS } from "@/lib/constants";
+import { IconBolt, IconPlane, IconLeaf, IconClipboard, IconCheck, IconXMark, IconClock } from "@/components/Icons";
 
 const COUNTRIES = [
   ["US", "United States"], ["GB", "United Kingdom"], ["DE", "Germany"],
@@ -150,10 +151,10 @@ function Calculator() {
               alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 22px",
-              fontSize: 22,
+              color: failed ? "var(--red)" : "var(--forest)",
             }}
           >
-            {failed ? "✕" : ok ? "✓" : "⏳"}
+            {failed ? <IconXMark size={22} /> : ok ? <IconCheck size={22} /> : <IconClock size={22} />}
           </div>
           <h2
             style={{
@@ -227,7 +228,7 @@ function Calculator() {
               className={`step-item${i === step ? " active" : i < step ? " done" : ""}`}
               onClick={() => i < step && goTo(i)}
             >
-              <div className="step-num">{i < step ? "✓" : i + 1}</div>
+              <div className="step-num">{i < step ? <IconCheck size={12} /> : i + 1}</div>
               <span className="step-text">{label}</span>
             </div>
             {i < STEPS.length - 1 && (
@@ -284,10 +285,10 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function StepHeading({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+function StepHeading({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 28 }}>
-      <span style={{ fontSize: 24, lineHeight: 1.3, flexShrink: 0 }}>{icon}</span>
+      <div style={{ color: "var(--forest)", flexShrink: 0, paddingTop: 3 }}>{icon}</div>
       <div>
         <h2 style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 4 }}>
           {title}
@@ -310,7 +311,7 @@ function EnergyStep({
 }) {
   return (
     <div>
-      <StepHeading icon="⚡" title="Energy" sub="Your home electricity and heating for the year." />
+      <StepHeading icon={<IconBolt size={22} />} title="Energy" sub="Your home electricity and heating for the year." />
       <Field label="Country" hint="Sets the emission intensity for your electricity grid.">
         <select className="field-input" value={country} onChange={e => setCountry(e.target.value)}>
           {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
@@ -350,7 +351,7 @@ function TransportStep({
 }) {
   return (
     <div>
-      <StepHeading icon="✈️" title="Transport" sub="Full-year distances. Count both legs on return trips." />
+      <StepHeading icon={<IconPlane size={22} />} title="Transport" sub="Full-year distances. Count both legs on return trips." />
       <div className="grid-2" style={{ gap: "0 16px" }}>
         <Field label="Car distance (km)">
           <input className="field-input" type="number" min="0" placeholder="0"
@@ -403,7 +404,7 @@ function DietStep({
 }) {
   return (
     <div>
-      <StepHeading icon="🥗" title="Diet" sub="Pick the pattern that fits you best." />
+      <StepHeading icon={<IconLeaf size={22} />} title="Diet" sub="Pick the pattern that fits you best." />
       <Field label="Your diet">
         <div
           style={{
@@ -508,7 +509,7 @@ function ReviewStep({
   return (
     <div>
       <StepHeading
-        icon="📋"
+        icon={<IconClipboard size={22} />}
         title="Review"
         sub="Once you submit, this record is permanent. It goes on-chain tied to your wallet and cannot be altered."
       />

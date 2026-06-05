@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
+import { IconSun, IconMoon } from "@/components/Icons";
 
 function truncate(addr: string) {
   return addr.slice(0, 6) + "…" + addr.slice(-4);
@@ -65,7 +66,7 @@ export function Nav() {
           <div className="nav-right">
             {/* Dark mode toggle */}
             <button onClick={toggleDark} className="nav-icon-btn" aria-label="Toggle dark mode">
-              {dark ? "☀️" : "🌙"}
+              {dark ? <IconSun size={16} /> : <IconMoon size={16} />}
             </button>
 
             {/* Wallet — desktop */}

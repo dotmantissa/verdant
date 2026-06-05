@@ -5,6 +5,7 @@ import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
 import { retireOffsets } from "@/lib/genlayer";
 import { OFFSETS_CONTRACT_ADDRESS } from "@/lib/constants";
+import { IconTree, IconBolt, IconWind, IconWaves, IconFlame, IconLeaf, IconXMark } from "@/components/Icons";
 
 type Project = {
   project_id: string;
@@ -81,13 +82,16 @@ const TYPE_LABELS: Record<string, string> = {
   cookstoves:     "Cookstoves",
 };
 
-const TYPE_ICONS: Record<string, string> = {
-  forestry:        "🌳",
-  renewable_energy:"⚡",
-  methane_capture: "💨",
-  blue_carbon:     "🌊",
-  cookstoves:      "🔥",
-};
+function TypeIcon({ type, size = 18 }: { type: string; size?: number }) {
+  switch (type) {
+    case "forestry":         return <IconTree  size={size} />;
+    case "renewable_energy": return <IconBolt  size={size} />;
+    case "methane_capture":  return <IconWind  size={size} />;
+    case "blue_carbon":      return <IconWaves size={size} />;
+    case "cookstoves":       return <IconFlame size={size} />;
+    default:                 return <IconLeaf  size={size} />;
+  }
+}
 
 export default function OffsetsPage() {
   return (
@@ -170,11 +174,11 @@ function Marketplace() {
             onClick={() => setResult(null)}
             style={{
               background: "none", border: "none", cursor: "pointer",
-              color: "var(--forest)", fontFamily: "inherit", fontSize: 16,
-              padding: 0, lineHeight: 1, flexShrink: 0,
+              color: "var(--forest)", padding: 0, lineHeight: 1, flexShrink: 0,
+              display: "flex", alignItems: "center",
             }}
           >
-            ×
+            <IconXMark size={16} />
           </button>
         </div>
       )}
@@ -187,7 +191,7 @@ function Marketplace() {
             onClick={() => setFilter(t)}
             className={`tag${filter === t ? " active" : ""}`}
           >
-            {t !== "all" && TYPE_ICONS[t] && <span>{TYPE_ICONS[t]}</span>}
+            {t !== "all" && <TypeIcon type={t} size={14} />}
             {t === "all" ? "All projects" : TYPE_LABELS[t] ?? t}
           </button>
         ))}
@@ -252,14 +256,13 @@ function Marketplace() {
                 onClick={() => setModal(null)}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  color: "var(--ink-30)", fontSize: 22, lineHeight: 1,
-                  padding: "2px 4px", flexShrink: 0,
-                  transition: "color 0.18s",
+                  color: "var(--ink-30)", padding: "2px 4px", flexShrink: 0,
+                  transition: "color 0.18s", display: "flex", alignItems: "center",
                 }}
                 onMouseOver={e => (e.currentTarget.style.color = "var(--ink)")}
                 onMouseOut={e => (e.currentTarget.style.color = "var(--ink-30)")}
               >
-                ×
+                <IconXMark size={18} />
               </button>
             </div>
 
@@ -349,7 +352,7 @@ function ProjectCard({
       <div style={{ padding: "18px 18px 14px", flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 11 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ fontSize: 18 }}>{TYPE_ICONS[project.project_type] ?? "🌿"}</span>
+            <span style={{ color: "var(--forest)" }}><TypeIcon type={project.project_type} size={18} /></span>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--ink-30)" }}>
               {TYPE_LABELS[project.project_type] ?? project.project_type}
             </span>

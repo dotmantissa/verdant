@@ -56,6 +56,7 @@ export async function readFootprintHistory(
   address: string,
   provider: BrowserProvider
 ) {
+  if (!FOOTPRINT_CONTRACT_ADDRESS) return [];
   const contract = new Contract(
     FOOTPRINT_CONTRACT_ADDRESS,
     FOOTPRINT_ABI,
@@ -70,6 +71,7 @@ export async function readFootprintHistory(
 }
 
 export async function readEmissionContext(provider: BrowserProvider) {
+  if (!FOOTPRINT_CONTRACT_ADDRESS) return {};
   const contract = new Contract(
     FOOTPRINT_CONTRACT_ADDRESS,
     FOOTPRINT_ABI,
@@ -87,6 +89,7 @@ export async function readAllOffsetProjects(
   projectIds: string[],
   provider: BrowserProvider
 ) {
+  if (!OFFSETS_CONTRACT_ADDRESS) return [];
   const contract = new Contract(
     OFFSETS_CONTRACT_ADDRESS,
     OFFSETS_ABI,
