@@ -1,5 +1,6 @@
 import { createClient, chains } from "genlayer-js";
-import type { GenLayerClient, GenLayerTransaction, Hash } from "genlayer-js/types";
+import type { GenLayerClient, Hash } from "genlayer-js/types";
+import { TransactionStatus, transactionsStatusNumberToName } from "genlayer-js/types";
 import {
   FOOTPRINT_CONTRACT_ADDRESS,
   OFFSETS_CONTRACT_ADDRESS,
@@ -34,22 +35,48 @@ function createWriteClient(walletAddress: string): GenLayerClient<never> {
   }) as unknown as GenLayerClient<never>;
 }
 
-function isSuccess(tx: GenLayerTransaction): boolean {
-  return tx.statusName === "FINALIZED" || tx.statusName === "ACCEPTED";
+// Fetch transaction status directly from GenLayer RPC, bypassing viem/MetaMask
+// routing so the raw GenLayer-specific status field is preserved.
+async function fetchRawTxStatus(hash: string): Promise<TransactionStatus | null> {
+  try {
+    const res = await fetch(RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getTransactionByHash",
+        params: [hash],
+      }),
+    });
+    const data = await res.json() as { result?: Record<string, unknown> | null };
+    const tx = data.result;
+    if (!tx) return null;
+    const raw = tx.status;
+    if (typeof raw === "string") {
+      const normalized = raw === "ACTIVATED" ? "PENDING" : raw;
+      return normalized as unknown as TransactionStatus;
+    }
+    if (typeof raw === "number") {
+      const name = transactionsStatusNumberToName[String(raw) as keyof typeof transactionsStatusNumberToName];
+      return name ? (name as unknown as TransactionStatus) : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
-function isFailed(tx: GenLayerTransaction): boolean {
-  return tx.statusName === "CANCELED" || tx.resultName === "FAILURE";
-}
+const SUCCESS_STATUSES = new Set<TransactionStatus>([TransactionStatus.FINALIZED, TransactionStatus.ACCEPTED]);
+const FAILED_STATUSES  = new Set<TransactionStatus>([TransactionStatus.CANCELED]);
 
 async function pollGenLayerTx(hash: Hash): Promise<TxReceipt> {
-  const client = getReadClient();
   for (let i = 0; i < TX_POLL_RETRIES; i++) {
     await new Promise((r) => setTimeout(r, TX_POLL_INTERVAL));
     try {
-      const tx = await client.getTransaction({ hash: hash as Hash });
-      if (isSuccess(tx)) return { status: "finalized", hash, result: tx };
-      if (isFailed(tx)) return { status: "failed", hash };
+      const statusName = await fetchRawTxStatus(hash as string);
+      if (statusName && SUCCESS_STATUSES.has(statusName)) return { status: "finalized", hash };
+      if (statusName && FAILED_STATUSES.has(statusName))  return { status: "failed",    hash };
     } catch {
       // keep polling
     }
@@ -62,17 +89,13 @@ async function pollGenLayerTx(hash: Hash): Promise<TxReceipt> {
 export async function readFootprintHistory(address: string) {
   if (!FOOTPRINT_CONTRACT_ADDRESS) return [];
   const client = getReadClient();
-  try {
-    const raw = await client.readContract({
-      address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
-      functionName: "get_footprint_history",
-      args: [address],
-    });
-    if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>[];
-    return [];
-  } catch {
-    return [];
-  }
+  const raw = await client.readContract({
+    address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
+    functionName: "get_footprint_history",
+    args: [address.toLowerCase()],
+  });
+  if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>[];
+  return [];
 }
 
 export async function readEmissionContext() {

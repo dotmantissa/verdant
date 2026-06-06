@@ -40,10 +40,16 @@ function Dashboard() {
   const [ctx,     setCtx]     = useState<EmissionCtx | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
+  const [tick,    setTick]    = useState(0);
+
+  function refresh() {
+    setTick(t => t + 1);
+  }
 
   useEffect(() => {
     if (!address) return;
     setLoading(true);
+    setError("");
     Promise.all([
       readFootprintHistory(address),
       readEmissionContext(),
@@ -54,7 +60,7 @@ function Dashboard() {
       })
       .catch((e: unknown) => setError((e as Error).message ?? "Failed to load records."))
       .finally(() => setLoading(false));
-  }, [address]);
+  }, [address, tick]);
 
   if (loading) {
     return (
@@ -70,7 +76,10 @@ function Dashboard() {
   if (error) {
     return (
       <div className="page">
-        <div className="banner error">{error}</div>
+        <div className="banner error" style={{ marginBottom: 16 }}>{error}</div>
+        <button onClick={refresh} className="btn btn-ghost" style={{ fontSize: 13 }}>
+          Try again
+        </button>
       </div>
     );
   }
@@ -115,9 +124,18 @@ function Dashboard() {
           <p style={{ fontSize: 14, color: "var(--ink-60)", lineHeight: 1.65, marginBottom: 28 }}>
             Once you calculate your footprint it will appear here permanently, tied to your wallet.
           </p>
-          <Link href="/calculate" className="btn btn-primary" style={{ width: "100%" }}>
-            Calculate now
-          </Link>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Link href="/calculate" className="btn btn-primary" style={{ width: "100%" }}>
+              Calculate now
+            </Link>
+            <button
+              onClick={refresh}
+              className="btn btn-ghost"
+              style={{ width: "100%", fontSize: 13 }}
+            >
+              Check again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -131,13 +149,22 @@ function Dashboard() {
 
   return (
     <div className="page">
-      <div className="anim-fade-up" style={{ marginBottom: 36 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 5 }}>
-          Dashboard
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--ink-60)" }}>
-          {history.length} record{history.length !== 1 ? "s" : ""} on-chain for this wallet
-        </p>
+      <div className="anim-fade-up" style={{ marginBottom: 36, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 5 }}>
+            Dashboard
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--ink-60)" }}>
+            {history.length} record{history.length !== 1 ? "s" : ""} on-chain for this wallet
+          </p>
+        </div>
+        <button
+          onClick={refresh}
+          className="btn btn-ghost"
+          style={{ fontSize: 12, padding: "6px 12px", flexShrink: 0 }}
+        >
+          Refresh
+        </button>
       </div>
 
       {/* Stat cards */}
