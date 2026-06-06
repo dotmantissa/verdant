@@ -40,6 +40,31 @@ function buildSelectiveProvider() {
         if (!eth) throw new Error("No wallet found");
         return eth.request({ method, params });
       }
+
+      // eth_estimateGas runs a full AI simulation on GenLayer intelligent contracts,
+      // taking 30-60s before MetaMask even opens. Return a fixed gas ceiling instead.
+      if (method === "eth_estimateGas") {
+        return "0x4C4B40"; // 5 000 000 — enough for any intelligent contract call
+      }
+
+      // eth_getTransactionReceipt returns RPC errors (not null) while GenLayer
+      // consensus is in progress. Translating those errors to null keeps viem's
+      // waitForTransactionReceipt polling instead of giving up with "too many errors".
+      if (method === "eth_getTransactionReceipt") {
+        try {
+          const res = await fetch(RPC_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+          });
+          const data = await res.json() as { result?: unknown; error?: unknown };
+          if (data.error) return null;
+          return data.result;
+        } catch {
+          return null;
+        }
+      }
+
       const res = await fetch(RPC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
