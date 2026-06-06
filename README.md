@@ -12,7 +12,7 @@ That is the whole principle. Numbers you can verify. Records you can trust.
 
 ## How it works
 
-Verdant runs on GenLayer, a blockchain where smart contracts can make real HTTP requests and call AI models as part of transaction execution. This is what makes the approach possible.
+Verdant runs on GenLayer, a blockchain where intelligent contracts can make real HTTP requests and call AI models as part of transaction execution. This is what makes the approach possible.
 
 When you submit a footprint calculation, the contract reaches out to Our World in Data and DEFRA to fetch current electricity carbon intensity and transport conversion factors. It passes your numbers and those factors to an AI model that performs the calculation and returns a structured result. The key part is that multiple independent validators each run this entire process separately. If their results do not agree within five percent, the transaction is rejected and nothing is written. Consensus is the condition for a record to exist.
 
