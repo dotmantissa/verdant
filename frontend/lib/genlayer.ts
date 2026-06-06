@@ -27,11 +27,38 @@ function getReadClient(): GenLayerClient<never> {
   return readClient;
 }
 
+// Routes only eth_sendTransaction through MetaMask (for signing); everything else
+// goes directly to the GenLayer RPC so waitForTransactionReceipt polling doesn't
+// hit MetaMask's rate limiter.
+function buildSelectiveProvider() {
+  return {
+    async request({ method, params = [] }: { method: string; params?: unknown[] }) {
+      if (method === "eth_sendTransaction") {
+        const eth = typeof window !== "undefined"
+          ? (window as Window & { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum
+          : undefined;
+        if (!eth) throw new Error("No wallet found");
+        return eth.request({ method, params });
+      }
+      const res = await fetch(RPC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+      });
+      const data = await res.json() as { result?: unknown; error?: { message?: string } };
+      if (data.error) throw data.error;
+      return data.result;
+    },
+  };
+}
+
 function createWriteClient(walletAddress: string): GenLayerClient<never> {
   return createClient({
     chain: chains.studionet,
     endpoint: RPC_URL,
     account: walletAddress as `0x${string}`,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    provider: buildSelectiveProvider() as any,
   }) as unknown as GenLayerClient<never>;
 }
 
