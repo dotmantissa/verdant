@@ -4,7 +4,9 @@ import { useWallet } from "@/hooks/useWallet";
 import { IconLock, IconLink } from "@/components/Icons";
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
-  const { isConnected, wrongNetwork, connect } = useWallet();
+  const { isConnected, isInitializing, wrongNetwork, connect } = useWallet();
+
+  if (isInitializing) return null;
 
   if (wrongNetwork) {
     return (

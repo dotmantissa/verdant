@@ -25,6 +25,7 @@ type WalletState = {
   signer: JsonRpcSigner | null;
   address: string | null;
   isConnected: boolean;
+  isInitializing: boolean;
   wrongNetwork: boolean;
   chainId: number | null;
   error: string;
@@ -45,6 +46,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [wrongNetwork, setWrongNetwork] = useState(false);
   const [chainId, setChainId] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -166,10 +168,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   // auto-reconnect if wallet was already connected
   useEffect(() => {
     const eth = getEthereum();
-    if (!eth) return;
-    eth.request({ method: "eth_accounts" }).then((accounts: string[]) => {
-      if (accounts && accounts.length > 0) connect();
-    }).catch(() => {});
+    if (!eth) {
+      setIsInitializing(false);
+      return;
+    }
+    eth.request({ method: "eth_accounts" })
+      .then((accounts: string[]) => {
+        if (accounts && accounts.length > 0) return connect();
+      })
+      .catch(() => {})
+      .finally(() => setIsInitializing(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -180,7 +188,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WalletContext.Provider
       value={{
-        provider, signer, address, isConnected, wrongNetwork,
+        provider, signer, address, isConnected, isInitializing, wrongNetwork,
         chainId, error, connect, disconnect, clearError,
       }}
     >
