@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { VerdantLogo } from "@/components/Icons";
 
 const STATS = [
   { val: "4.7 t",      label: "Global average per person per year" },
@@ -47,8 +48,13 @@ export default function HomePage() {
 
       {/* Hero */}
       <section style={{ marginBottom: 72 }}>
+        {/* Logo mark — hero title image */}
+        <div className="anim-fade-up" style={{ marginBottom: 28 }}>
+          <VerdantLogo size={52} variant="full" />
+        </div>
+
         <p
-          className="anim-fade-up"
+          className="anim-fade-up delay-1"
           style={{
             fontSize: 12,
             fontWeight: 600,
@@ -62,7 +68,7 @@ export default function HomePage() {
         </p>
 
         <h1
-          className="anim-fade-up delay-1"
+          className="anim-fade-up delay-2"
           style={{
             fontSize: "clamp(2rem, 6vw, 3.8rem)",
             fontWeight: 600,
@@ -77,7 +83,7 @@ export default function HomePage() {
         </h1>
 
         <p
-          className="anim-fade-up delay-2"
+          className="anim-fade-up delay-3"
           style={{
             fontSize: 16,
             color: "var(--ink-60)",
@@ -91,7 +97,7 @@ export default function HomePage() {
           the result to your wallet address permanently.
         </p>
 
-        <div className="anim-fade-up delay-3" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="anim-fade-up delay-4" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/calculate" className="btn btn-primary" style={{ fontSize: 14, padding: "12px 22px" }}>
             Calculate your footprint
           </Link>
@@ -235,9 +241,12 @@ export default function HomePage() {
           gap: 12,
         }}
       >
-        <span style={{ fontSize: 12, color: "var(--ink-30)" }}>
-          Records stored on GenLayer. No account needed.
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <VerdantLogo size={20} variant="mark" style={{ opacity: 0.5 }} />
+          <span style={{ fontSize: 12, color: "var(--ink-30)" }}>
+            Records stored on GenLayer. No account needed.
+          </span>
+        </div>
         <a
           href="https://github.com/dotmantissa/verdant"
           target="_blank"

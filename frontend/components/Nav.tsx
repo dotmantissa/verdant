@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
-import { IconSun, IconMoon } from "@/components/Icons";
+import { IconSun, IconMoon, VerdantLogo } from "@/components/Icons";
 
 function truncate(addr: string) {
   return addr.slice(0, 6) + "…" + addr.slice(-4);
@@ -50,8 +50,10 @@ export function Nav() {
     <>
       <header className="nav-header">
         <div className="nav-inner">
-          {/* Wordmark */}
-          <Link href="/" className="nav-wordmark">Verdant</Link>
+          {/* Logo */}
+          <Link href="/" className="nav-wordmark" aria-label="Verdant home">
+            <VerdantLogo size={26} variant="full" />
+          </Link>
 
           {/* Desktop nav links */}
           <nav className="nav-links-desktop">
@@ -157,15 +159,14 @@ export function Nav() {
         }
 
         .nav-wordmark {
-          font-size: 15px;
-          font-weight: 700;
-          letter-spacing: -0.01em;
-          color: var(--forest);
           text-decoration: none;
           flex-shrink: 0;
-          transition: color 0.18s;
+          display: flex;
+          align-items: center;
+          opacity: 1;
+          transition: opacity 0.18s;
         }
-        .nav-wordmark:hover { color: var(--sage); }
+        .nav-wordmark:hover { opacity: 0.8; }
 
         .nav-links-desktop {
           display: none;

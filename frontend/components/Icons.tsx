@@ -1,3 +1,64 @@
+type LogoProps = {
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+  variant?: "mark" | "full";
+};
+
+export function VerdantLogo({ size = 32, className, style, variant = "full" }: LogoProps) {
+  if (variant === "mark") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 32 32"
+        fill="none"
+        className={className}
+        style={style}
+        aria-label="Verdant"
+      >
+        {/* Outer leaf shape — forest fill */}
+        <path
+          d="M16 3C10 3 5 8 5 14c0 4.5 2.5 8.4 6.2 10.4L12 28h8l.8-3.6C24.5 22.4 27 18.5 27 14c0-6-5-11-11-11z"
+          fill="var(--forest)"
+        />
+        {/* Inner accent leaf — sage */}
+        <path
+          d="M16 8c-3.3 0-6 2.7-6 6 0 2.5 1.5 4.7 3.7 5.7L14 22h4l.3-2.3C20.5 18.7 22 16.5 22 14c0-3.3-2.7-6-6-6z"
+          fill="var(--sage)"
+          opacity="0.55"
+        />
+        {/* Center vein — cream line */}
+        <line x1="16" y1="10" x2="16" y2="26" stroke="var(--cream)" strokeWidth="1.4" strokeLinecap="round" />
+        {/* Consensus dots — three stacked circles suggesting validator agreement */}
+        <circle cx="16" cy="12" r="1.1" fill="var(--cream)" />
+        <circle cx="16" cy="16" r="1.1" fill="var(--cream)" />
+        <circle cx="16" cy="20" r="1.1" fill="var(--cream)" />
+      </svg>
+    );
+  }
+
+  return (
+    <span
+      className={className}
+      style={{ display: "inline-flex", alignItems: "center", gap: 9, ...style }}
+    >
+      <VerdantLogo size={size} variant="mark" />
+      <span
+        style={{
+          fontSize: size * 0.5,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          color: "var(--forest)",
+          lineHeight: 1,
+        }}
+      >
+        Verdant
+      </span>
+    </span>
+  );
+}
+
 type IconProps = {
   size?: number;
   className?: string;
