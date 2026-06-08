@@ -93,6 +93,28 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
       if (!accounts || accounts.length === 0) throw new Error("No accounts returned");
 
+      // Use a proxy RPC URL so MetaMask's internal calls (net_listening, eth_newBlockFilter,
+      // etc.) get sensible responses — GenLayer Studio doesn't implement those methods.
+      const proxyRpcUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/api/rpc`
+        : RPC_URL;
+
+      // Always register the network with the proxy RPC. If the network already exists
+      // with a different RPC, MetaMask will ask the user to approve the update.
+      try {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CHAIN_ID_HEX,
+            chainName: NETWORK_NAME,
+            nativeCurrency: NETWORK_CURRENCY,
+            rpcUrls: [proxyRpcUrl],
+          }],
+        });
+      } catch {
+        // User may have rejected the update dialog; try to switch anyway.
+      }
+
       const currentChainHex: string = await eth.request({ method: "eth_chainId" });
       const currentChain = parseInt(currentChainHex, 16);
 
@@ -104,19 +126,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           });
         } catch (switchErr: unknown) {
           const se = switchErr as { code?: number };
-          if (se?.code === 4902) {
-            await eth.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: CHAIN_ID_HEX,
-                  chainName: NETWORK_NAME,
-                  nativeCurrency: NETWORK_CURRENCY,
-                  rpcUrls: [RPC_URL],
-                },
-              ],
-            });
-          } else {
+          if (se?.code !== 4902) {
             setWrongNetwork(true);
             return;
           }
