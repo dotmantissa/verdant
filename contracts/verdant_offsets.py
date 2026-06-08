@@ -29,9 +29,11 @@ class VerdantOffsets(gl.Contract):
     total_retired: TreeMap[Address, u256]
     # project_id -> total tonnes retired across all users (*100)
     project_total_retired: TreeMap[str, u256]
+    # contract deployer / admin address
+    admin: Address
 
     def __init__(self):
-        pass
+        self.admin = gl.message.sender_address
 
     # ------------------------------------------------------------------
     # Internal: fetch and verify offset project data
@@ -309,6 +311,30 @@ Reply ONLY with a JSON object:
         self.project_status[pid] = u256(final_status_code)
 
         return result_json
+
+    # ------------------------------------------------------------------
+    # Admin: force-verify or force-reject a project (deployer only)
+    # ------------------------------------------------------------------
+
+    @gl.public.write
+    def admin_set_project_status(
+        self,
+        project_id: str,
+        status: int,
+    ) -> str:
+        """
+        Deployer-only: manually set a project's verification status.
+        status: 0=pending, 1=verified, 2=rejected
+        Used to curate the initial set of known-good projects.
+        """
+        if gl.message.sender_address != self.admin:
+            gl.advanced.user_error_immediate("Not authorized")
+        if project_id not in self.project_status:
+            gl.advanced.user_error_immediate(f"Project '{project_id}' not found")
+        if status not in (0, 1, 2):
+            gl.advanced.user_error_immediate("status must be 0, 1, or 2")
+        self.project_status[project_id] = u256(status)
+        return json.dumps({"project_id": project_id, "status": status})
 
     # ------------------------------------------------------------------
     # Public write: retire offsets (permanent record)

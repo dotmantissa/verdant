@@ -126,6 +126,10 @@ function Marketplace() {
         beneficiaryName: form.name,
         reason:          form.reason,
       });
+      if (tx.status === "failed") {
+        setError("Transaction was rejected on-chain. The project may not be verified.");
+        return;
+      }
       setResult({ hash: tx.hash, project: modal.name });
       setModal(null);
     } catch (e: unknown) {
