@@ -187,6 +187,24 @@ export async function readOffsetProject(projectId: string) {
   }
 }
 
+export async function readTotalRetired(address: string): Promise<number> {
+  if (!OFFSETS_CONTRACT_ADDRESS) return 0;
+  const client = getReadClient();
+  try {
+    const raw = await client.readContract({
+      address: OFFSETS_CONTRACT_ADDRESS as `0x${string}`,
+      functionName: "get_total_retired",
+      args: [toCalldataAddress(address)],
+    });
+    // Contract stores tonnes * 100 as an integer
+    if (typeof raw === "number" || typeof raw === "bigint") return Number(raw) / 100;
+    if (typeof raw === "string") return parseFloat(raw) / 100;
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function readAllOffsetProjects(projectIds: string[]) {
   if (!OFFSETS_CONTRACT_ADDRESS) return [];
   const results = await Promise.all(

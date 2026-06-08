@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WalletGate } from "@/components/WalletGate";
 import { useWallet } from "@/hooks/useWallet";
-import { readFootprintHistory, readEmissionContext } from "@/lib/genlayer";
+import { readFootprintHistory, readEmissionContext, readTotalRetired } from "@/lib/genlayer";
 import { IconBarChart } from "@/components/Icons";
 
 type FootprintRecord = {
@@ -36,11 +36,12 @@ export default function DashboardPage() {
 
 function Dashboard() {
   const { address } = useWallet();
-  const [history, setHistory] = useState<FootprintRecord[]>([]);
-  const [ctx,     setCtx]     = useState<EmissionCtx | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
-  const [tick,    setTick]    = useState(0);
+  const [history,      setHistory]      = useState<FootprintRecord[]>([]);
+  const [ctx,          setCtx]          = useState<EmissionCtx | null>(null);
+  const [totalRetired, setTotalRetired] = useState<number>(0);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState("");
+  const [tick,         setTick]         = useState(0);
 
   function refresh() {
     setTick(t => t + 1);
@@ -53,10 +54,12 @@ function Dashboard() {
     Promise.all([
       readFootprintHistory(address),
       readEmissionContext(),
+      readTotalRetired(address),
     ])
-      .then(([hist, emCtx]) => {
+      .then(([hist, emCtx, retired]) => {
         setHistory(hist as FootprintRecord[]);
         setCtx(emCtx as EmissionCtx);
+        setTotalRetired(retired as number);
       })
       .catch((e: unknown) => setError((e as Error).message ?? "Failed to load records."))
       .finally(() => setLoading(false));
@@ -143,6 +146,7 @@ function Dashboard() {
 
   const latest  = history[history.length - 1];
   const latestT = latest ? latest.total_kg_co2e / 1000 : null;
+  const netT    = latestT !== null ? Math.max(0, latestT - totalRetired) : null;
 
   const avgDiff   = latestT && ctx ? latestT - ctx.global_average_t_co2e : null;
   const parisDiff = latestT && ctx ? latestT - ctx.paris_target_t_co2e   : null;
@@ -180,7 +184,20 @@ function Dashboard() {
           <p className="stat-note">{latest.label || latest.year}</p>
         </div>
 
-        <div className="stat-card anim-fade-up delay-2">
+        <div
+          className="stat-card anim-fade-up delay-2"
+          style={netT === 0 ? { borderColor: "var(--sage-30)", background: "var(--sage-15)" } : {}}
+        >
+          <p className="stat-label">Net position</p>
+          <p className="stat-value" style={{ color: netT === 0 ? "var(--forest)" : "var(--ink)" }}>
+            {netT !== null ? `${netT.toFixed(2)} t` : "—"}
+          </p>
+          <p className="stat-note" style={{ color: totalRetired > 0 ? "var(--forest)" : "var(--ink-30)" }}>
+            {totalRetired > 0 ? `${totalRetired.toFixed(2)} t retired` : "no offsets yet"}
+          </p>
+        </div>
+
+        <div className="stat-card anim-fade-up delay-3">
           <p className="stat-label">Global average</p>
           <p className="stat-value">{ctx ? `${ctx.global_average_t_co2e} t` : "—"}</p>
           {avgDiff !== null && (
@@ -192,7 +209,7 @@ function Dashboard() {
           )}
         </div>
 
-        <div className="stat-card anim-fade-up delay-3">
+        <div className="stat-card anim-fade-up delay-4">
           <p className="stat-label">Paris target</p>
           <p className="stat-value">{ctx ? `${ctx.paris_target_t_co2e} t` : "—"}</p>
           {parisDiff !== null && (
@@ -200,12 +217,6 @@ function Dashboard() {
               {parisDiff > 0 ? `${parisDiff.toFixed(1)} t over` : "On track"}
             </p>
           )}
-        </div>
-
-        <div className="stat-card anim-fade-up delay-4">
-          <p className="stat-label">Records</p>
-          <p className="stat-value">{history.length}</p>
-          <p className="stat-note">on-chain</p>
         </div>
       </div>
 
