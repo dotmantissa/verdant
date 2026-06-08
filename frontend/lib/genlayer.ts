@@ -1,6 +1,6 @@
 import { createClient, chains } from "genlayer-js";
 import type { GenLayerClient, Hash } from "genlayer-js/types";
-import { TransactionStatus, transactionsStatusNumberToName } from "genlayer-js/types";
+import { CalldataAddress, TransactionStatus, transactionsStatusNumberToName } from "genlayer-js/types";
 import {
   FOOTPRINT_CONTRACT_ADDRESS,
   OFFSETS_CONTRACT_ADDRESS,
@@ -14,6 +14,15 @@ export type TxReceipt = {
   hash: string;
   result?: unknown;
 };
+
+function toCalldataAddress(hexAddress: string): CalldataAddress {
+  const clean = hexAddress.replace(/^0x/i, "");
+  const bytes = new Uint8Array(20);
+  for (let i = 0; i < 20; i++) {
+    bytes[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  }
+  return new CalldataAddress(bytes);
+}
 
 let readClient: GenLayerClient<never>;
 
@@ -144,7 +153,7 @@ export async function readFootprintHistory(address: string) {
   const raw = await client.readContract({
     address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
     functionName: "get_footprint_history",
-    args: [address.toLowerCase()],
+    args: [toCalldataAddress(address)],
   });
   if (typeof raw === "string") return JSON.parse(raw) as Record<string, unknown>[];
   return [];
