@@ -102,7 +102,7 @@ export default function OffsetsPage() {
 }
 
 function Marketplace() {
-  const { address } = useWallet();
+  const { address, walletProvider } = useWallet();
   const [filter,   setFilter]  = useState("all");
   const [expanded, setExpanded]= useState<string | null>(null);
   const [modal,    setModal]   = useState<Project | null>(null);
@@ -120,7 +120,7 @@ function Marketplace() {
     setRetiring(true);
     setError("");
     try {
-      const tx = await retireOffsets(address, {
+      const tx = await retireOffsets(address, walletProvider, {
         projectId:       modal.project_id,
         tonnesCo2e:      form.tonnes,
         beneficiaryName: form.name,

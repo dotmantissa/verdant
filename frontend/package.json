@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.29.2",
     "ethers": "^6.16.0",
     "genlayer-js": "^0.23.1",
     "next": "16.2.7",

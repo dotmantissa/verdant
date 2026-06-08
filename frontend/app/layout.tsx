@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
-import { WalletProvider } from "@/components/WalletProvider";
+import { PrivyProviderWrapper } from "@/components/PrivyProviderWrapper";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -31,10 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${dmSans.variable} ${dmMono.variable}`}>
       <body>
-        <WalletProvider>
+        <PrivyProviderWrapper>
           <Nav />
           <main>{children}</main>
-        </WalletProvider>
+        </PrivyProviderWrapper>
       </body>
     </html>
   );

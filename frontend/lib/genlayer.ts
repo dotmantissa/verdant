@@ -36,18 +36,14 @@ function getReadClient(): GenLayerClient<never> {
   return readClient;
 }
 
-// Routes only eth_sendTransaction through MetaMask (for signing); everything else
-// goes directly to the GenLayer RPC so waitForTransactionReceipt polling doesn't
-// hit MetaMask's rate limiter.
-function buildSelectiveProvider() {
+// Routes only eth_sendTransaction through the Privy wallet provider (for signing);
+// everything else goes directly to the GenLayer RPC so polling doesn't hit
+// MetaMask's rate limiter.
+function buildSelectiveProvider(walletProvider: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }) {
   return {
     async request({ method, params = [] }: { method: string; params?: unknown[] }) {
       if (method === "eth_sendTransaction") {
-        const eth = typeof window !== "undefined"
-          ? (window as Window & { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum
-          : undefined;
-        if (!eth) throw new Error("No wallet found");
-        return eth.request({ method, params });
+        return walletProvider.request({ method, params });
       }
 
       // eth_estimateGas runs a full AI simulation on GenLayer intelligent contracts,
@@ -86,13 +82,14 @@ function buildSelectiveProvider() {
   };
 }
 
-function createWriteClient(walletAddress: string): GenLayerClient<never> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createWriteClient(walletAddress: string, walletProvider: any): GenLayerClient<never> {
   return createClient({
     chain: chains.studionet,
     endpoint: RPC_URL,
     account: walletAddress as `0x${string}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    provider: buildSelectiveProvider() as any,
+    provider: buildSelectiveProvider(walletProvider) as any,
   }) as unknown as GenLayerClient<never>;
 }
 
@@ -205,6 +202,8 @@ export async function readAllOffsetProjects(projectIds: string[]) {
 
 export async function submitFootprint(
   walletAddress: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  walletProvider: any,
   params: {
     energyData: string;
     transportData: string;
@@ -214,7 +213,7 @@ export async function submitFootprint(
     label: string;
   }
 ): Promise<TxReceipt> {
-  const client = createWriteClient(walletAddress);
+  const client = createWriteClient(walletAddress, walletProvider);
   const txId = await client.writeContract({
     address: FOOTPRINT_CONTRACT_ADDRESS as `0x${string}`,
     functionName: "calculate_footprint",
@@ -233,6 +232,8 @@ export async function submitFootprint(
 
 export async function retireOffsets(
   walletAddress: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  walletProvider: any,
   params: {
     projectId: string;
     tonnesCo2e: string;
@@ -240,7 +241,7 @@ export async function retireOffsets(
     reason: string;
   }
 ): Promise<TxReceipt> {
-  const client = createWriteClient(walletAddress);
+  const client = createWriteClient(walletAddress, walletProvider);
   const txId = await client.writeContract({
     address: OFFSETS_CONTRACT_ADDRESS as `0x${string}`,
     functionName: "retire_offsets",
