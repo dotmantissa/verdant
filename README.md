@@ -49,6 +49,13 @@ Currency:      GEN
 
 The app will prompt you to switch to this network when you connect. Once connected, you can calculate your footprint, view your on-chain history on the dashboard, and browse offset projects.
 
+The contracts deployed on Studionet are:
+
+```
+Footprint contract:  0x975beB7022f68706B937822a3c69B84Eff84D66e
+Offsets contract:    0x26146D7D087F9CA9Bf2bE9955f0A5f88b3a90349
+```
+
 
 ## Running it locally
 
