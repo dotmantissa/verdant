@@ -23,10 +23,7 @@ export function PrivyProviderWrapper({ children }: { children: React.ReactNode }
       config={{
         defaultChain: genLayerStudionet,
         supportedChains: [genLayerStudionet],
-        loginMethods: ["email", "wallet", "google", "twitter"],
-        embeddedWallets: {
-          ethereum: { createOnLogin: "users-without-wallets" },
-        },
+        loginMethods: ["wallet"],
         appearance: {
           theme: "light",
           accentColor: "#53745f",
