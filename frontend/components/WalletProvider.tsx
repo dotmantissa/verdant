@@ -57,18 +57,34 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const wallet = wallets[0];
-    const chainNum = parseInt((wallet.chainId ?? "eip155:0").split(":").pop() ?? "0", 10);
+    let cancelled = false;
 
-    if (chainNum !== CHAIN_ID) {
-      wallet.switchChain(CHAIN_ID).catch(() => setWrongNetwork(true));
-    } else {
+    async function init() {
+      const wallet = wallets[0];
+      const chainNum = parseInt((wallet.chainId ?? "eip155:0").split(":").pop() ?? "0", 10);
+
+      if (chainNum !== CHAIN_ID) {
+        try {
+          await wallet.switchChain(CHAIN_ID);
+        } catch {
+          if (!cancelled) setWrongNetwork(true);
+          return;
+        }
+      }
+
+      if (cancelled) return;
       setWrongNetwork(false);
+
+      try {
+        const p = await wallet.getEthereumProvider();
+        if (!cancelled) setWalletProvider(p);
+      } catch {
+        if (!cancelled) setError("Failed to get wallet provider.");
+      }
     }
 
-    wallet.getEthereumProvider()
-      .then((p) => setWalletProvider(p))
-      .catch(() => setError("Failed to get wallet provider."));
+    init();
+    return () => { cancelled = true; };
   }, [authenticated, wallets]);
 
   const primaryWallet = wallets[0] ?? null;
